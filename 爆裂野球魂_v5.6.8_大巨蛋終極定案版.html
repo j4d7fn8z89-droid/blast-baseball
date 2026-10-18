@@ -1,0 +1,1779 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>爆裂野球魂 v5.6.8：大巨蛋終極定案版</title>
+<style>
+  * { box-sizing: border-box; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; margin: 0; padding: 0; }
+  html, body { width: 100%; height: 100%; overflow: hidden; background: #060d1a; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #fff; }
+  #app { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  canvas#cv { display: block; width: 100%; height: 100%; touch-action: none; }
+  #title-screen { position: absolute; inset: 0; z-index: 25; display: flex; flex-direction: column; justify-content: space-between; padding: 48px 14px 84px 14px; pointer-events: none; }
+  #title-screen.hidden, #game-ui.hidden { display: none !important; }
+  .title-top-bar { display: flex; justify-content: space-between; align-items: center; pointer-events: auto; gap: 6px; }
+  .coin-pill { background: rgba(15,23,42,0.92); border: 1.5px solid #facc15; border-radius: 20px; padding: 5px 12px; font-size: 12px; font-weight: 900; color: #fde047; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+  .title-bottom-area { display: flex; flex-direction: column; gap: 8px; width: 100%; max-width: 390px; margin: 0 auto; pointer-events: auto; }
+  .mode-grid { display: flex; flex-direction: column; gap: 8px; }
+  .mode-card { border: 2px solid rgba(255,255,255,0.35); border-radius: 15px; padding: 11px 14px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 6px 20px rgba(0,0,0,0.65); transition: transform 0.1s; }
+  .mode-card:active { transform: scale(0.97); }
+  .mode-card.derby { background: linear-gradient(135deg, rgba(245,158,11,0.95), rgba(180,83,9,0.95)); border-color: #fde047; }
+  .mode-card.match { background: linear-gradient(135deg, rgba(37,99,235,0.95), rgba(29,78,216,0.95)); border-color: #93c5fd; }
+  .mc-title { font-size: 16px; font-weight: 900; color: #fff; text-shadow: 0 2px 4px rgba(0,0,0,0.4); }
+  .mc-sub { font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.92); margin-top: 2px; }
+  .mc-play { background: rgba(15,23,42,0.88); color: #facc15; padding: 6px 11px; border-radius: 18px; font-size: 12px; font-weight: 900; white-space: nowrap; }
+  .lobby-tools { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .lobby-btn { background: rgba(15,23,42,0.92); border: 1.5px solid #475569; border-radius: 13px; padding: 8px 10px; color: #f8fafc; font-size: 12px; font-weight: 800; cursor: pointer; text-align: center; }
+  .lobby-btn span { display: block; font-size: 10px; color: #facc15; margin-top: 2px; font-weight: 900; }
+  .credit-pill { background: rgba(15,23,42,0.92); border: 1px solid rgba(250,204,21,0.45); border-radius: 14px; padding: 6px 10px; text-align: center; line-height: 1.35; }
+  .credit-line1 { font-size: 10px; font-weight: 900; color: #facc15; letter-spacing: 0.5px; }
+  .credit-line2 { font-size: 11px; font-weight: 800; color: #cbd5e1; }
+  .credit-line2 b { color: #38bdf8; }
+  .hud-left { position: absolute; top: 48px; left: 8px; background: rgba(15,23,42,0.88); border: 1.5px solid rgba(255,255,255,0.2); border-radius: 12px; padding: 6px 10px; min-width: 142px; z-index: 10; pointer-events: none; }
+  .ver-tag { font-size: 10px; font-weight: 900; color: #4ade80; margin-bottom: 2px; display: flex; justify-content: space-between; gap: 6px; }
+  .stat-line { display: flex; justify-content: space-between; font-size: 11px; font-weight: 800; margin: 1.5px 0; }
+  .stat-line .val { color: #facc15; font-weight: 900; }
+  .stat-line .val.red { color: #f87171; }
+  .bso-row { display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 900; margin-top: 2px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #334155; display: inline-block; margin-left: 2px; }
+  .dot.b { background: #22c55e; box-shadow: 0 0 4px #22c55e; }
+  .dot.s { background: #eab308; box-shadow: 0 0 4px #eab308; }
+  .dot.o { background: #ef4444; box-shadow: 0 0 4px #ef4444; }
+  .hud-right { position: absolute; top: 48px; right: 8px; display: flex; flex-direction: column; align-items: flex-end; gap: 4px; z-index: 15; max-width: 58vw; }
+  .tool-row { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; }
+  .mini-btn { background: rgba(15,23,42,0.9); color: #f8fafc; border: 1.2px solid rgba(255,255,255,0.28); border-radius: 11px; padding: 4px 7px; font-size: 10px; font-weight: 800; cursor: pointer; white-space: nowrap; }
+  .mini-btn.sky-pill { border-color: #facc15; color: #fde047; }
+  #stat-pill { background: rgba(15,23,42,0.94); border: 1.5px solid #facc15; border-radius: 14px; padding: 3px 9px; font-size: 10px; font-weight: 800; color: #fef08a; white-space: nowrap; pointer-events: none; opacity: 0; transition: opacity 0.2s; }
+  #stat-pill.show { opacity: 1; }
+  #pitch-info { position: absolute; bottom: 86px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.92); border: 1.5px solid #38bdf8; border-radius: 16px; padding: 4px 12px; font-size: 11px; font-weight: 900; color: #38bdf8; white-space: nowrap; pointer-events: none; z-index: 14; }
+  .ctrl-left { position: absolute; bottom: 14px; left: 8px; display: flex; flex-direction: column; gap: 4px; z-index: 15; width: 128px; }
+  .bat-btn { background: rgba(30,41,59,0.94); color: #fde047; border: 1px solid #eab308; border-radius: 9px; padding: 5px 6px; font-size: 10px; font-weight: 900; cursor: pointer; text-align: center; }
+  .tactic-row { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .opt-btn { background: rgba(15,23,42,0.9); color: #cbd5e1; border: 1px solid #475569; border-radius: 9px; padding: 5px 4px; font-size: 10px; font-weight: 800; cursor: pointer; text-align: center; }
+  .opt-btn.active { background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #fff; border-color: #93c5fd; }
+  .opt-btn.ult-ready { background: linear-gradient(135deg, #d97706, #b91c1c); color: #fef08a; border-color: #fde047; font-weight: 900; box-shadow: 0 0 10px rgba(250,204,21,0.6); }
+  .opt-btn.ult-active { background: linear-gradient(135deg, #facc15, #ea580c); color: #0f172a; border-color: #fff; font-weight: 900; box-shadow: 0 0 14px #facc15; }
+  .pitch-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 128px; }
+  .ctrl-right { position: absolute; bottom: 14px; right: 10px; z-index: 15; }
+  #main-btn { width: 76px; height: 76px; border-radius: 50%; background: radial-gradient(circle at 32% 28%, #fb7185, #e11d48 62%, #9f1239); border: 3px solid #fecdd3; color: #fff; font-size: 15px; font-weight: 900; cursor: pointer; box-shadow: 0 6px 18px rgba(225,29,72,0.6); display: flex; flex-direction: column; align-items: center; justify-content: center; }
+  #main-btn span.sub { font-size: 9px; font-weight: 800; opacity: 0.9; margin-top: 1px; }
+  #main-btn:active { transform: scale(0.92); }
+  #main-btn.pitch-mode { background: radial-gradient(circle at 32% 28%, #38bdf8, #0284c7 62%, #0369a1); border-color: #bae6fd; box-shadow: 0 6px 18px rgba(2,132,199,0.6); }
+  .modal-overlay { position: absolute; inset: 0; background: rgba(6,13,26,0.88); display: none; align-items: center; justify-content: center; z-index: 40; backdrop-filter: blur(6px); }
+  .modal-overlay.show { display: flex; }
+  .modal-card { background: linear-gradient(180deg, #1e293b, #0f172a); border: 2px solid #facc15; border-radius: 20px; padding: 14px; text-align: center; max-width: 365px; width: 92%; max-height: 88vh; overflow-y: auto; box-shadow: 0 20px 50px rgba(0,0,0,0.9); }
+  .modal-title { font-size: 19px; font-weight: 900; color: #facc15; margin-bottom: 4px; }
+  .modal-desc { font-size: 11px; color: #cbd5e1; margin-bottom: 10px; }
+  .face-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 12px; }
+  .face-item { background: #0f172a; border: 2px solid #334155; border-radius: 10px; padding: 4px; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+  .face-item.active { border-color: #facc15; background: rgba(250,204,21,0.14); }
+  .face-item canvas { width: 58px; height: 58px; display: block; }
+  .face-name { font-size: 10px; font-weight: 900; color: #f8fafc; margin-top: 2px; }
+  .face-desc { font-size: 8px; color: #94a3b8; }
+  .modal-btn { background: linear-gradient(135deg, #22c55e, #16a34a); border: none; color: #fff; font-size: 13px; font-weight: 900; padding: 10px 16px; border-radius: 18px; cursor: pointer; width: 100%; }
+  .vic-header { display: flex; align-items: center; justify-content: center; gap: 10px; background: rgba(250,204,21,0.1); border: 1px solid rgba(250,204,21,0.35); border-radius: 14px; padding: 8px; margin-bottom: 10px; }
+  .rank-badge { width: 44px; height: 44px; border-radius: 50%; background: radial-gradient(circle, #fde047, #ca8a04); border: 2px solid #fff; color: #0f172a; font-size: 24px; font-weight: 900; display: flex; align-items: center; justify-content: center; }
+  .vic-score { font-size: 22px; font-weight: 900; color: #fff; letter-spacing: 1px; }
+  .vic-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .vic-stat { background: rgba(15,23,42,0.85); border: 1px solid #334155; border-radius: 10px; padding: 6px; }
+  .vic-stat span { display: block; font-size: 10px; color: #94a3b8; }
+  .vic-stat b { font-size: 14px; color: #facc15; }
+  @media (orientation: landscape) {
+    #title-screen { padding: 12px 18px 14px 18px; }
+    .title-bottom-area { max-width: 640px; gap: 6px; }
+    .mode-grid { flex-direction: row; }
+    .mode-card { flex: 1; padding: 8px 12px; }
+    .hud-left { top: 10px; left: 10px; }
+    .hud-right { top: 10px; right: 10px; }
+    #pitch-info { bottom: 14px; left: 146px; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <canvas id="cv"></canvas>
+  <div id="title-screen">
+    <div class="title-top-bar">
+      <div class="coin-pill" id="lobby-coin">🪙 120 · 最遠 0 ft</div>
+      <div style="display:flex; gap:5px;">
+        <button class="mini-btn sky-pill" id="lobby-sky-btn" onclick="cycleSky()">🏟️ 大巨蛋</button>
+        <button class="mini-btn" id="lobby-bgm-btn" onclick="toggleBGM()">🎵 音樂開</button>
+        <button class="mini-btn" id="lobby-snd-btn" onclick="toggleSound()">🔊 音效開</button>
+      </div>
+    </div>
+    <div class="title-bottom-area">
+      <div class="mode-grid">
+        <div class="mode-card derby" onclick="enterGame('DERBY')">
+          <div>
+            <div class="mc-title">🏆 全壘打大賽 (DERBY)</div>
+            <div class="mc-sub">10 出局開轟 · 挑戰外野賞金看板</div>
+          </div>
+          <div class="mc-play">開轟 ▶</div>
+        </div>
+        <div class="mode-card match" onclick="enterGame('MATCH')">
+          <div>
+            <div class="mc-title">⚾ 3局王牌對決 (MATCH)</div>
+            <div class="mc-sub">完整投打攻守 · 盜壘短打與雙殺守備</div>
+          </div>
+          <div class="mc-play">對決 ▶</div>
+        </div>
+      </div>
+      <div class="lobby-tools">
+        <button class="lobby-btn" onclick="openFaceModal()">🎭 9款球員造型圖鑑<span id="lobby-face-txt">⚡ 迷彩戰紋</span></button>
+        <button class="lobby-btn" onclick="cycleBat()">🏏 切換裝備球棒<span id="lobby-bat-txt">🔩 甲子園鋁棒</span></button>
+      </div>
+      <div class="credit-pill">
+        <div class="credit-line1">🏆 OFFICIAL 聯合開發作品</div>
+        <div class="credit-line2">製作人：<b>林楚翰</b> × AI 引擎：<b>Gemini</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="game-ui" class="hidden">
+    <div class="hud-left" id="hud-box"></div>
+    <div class="hud-right">
+      <div class="tool-row">
+        <button class="mini-btn" onclick="goHome()">🏠封面</button>
+        <button class="mini-btn" onclick="openFaceModal()">🎭造型</button>
+        <button class="mini-btn sky-pill" id="sky-btn" onclick="cycleSky()">🏟️大巨蛋</button>
+      </div>
+      <div class="tool-row">
+        <button class="mini-btn" id="bgm-btn" onclick="toggleBGM()">🎵音樂</button>
+        <button class="mini-btn" id="snd-btn" onclick="toggleSound()">🔊音效</button>
+        <button class="mini-btn" onclick="forceNextPitch()">🔄下一球</button>
+      </div>
+      <div id="stat-pill">⚡ 初速 108 mph · 仰角 25°</div>
+    </div>
+    <div id="pitch-info">🔥 四縫線直球 155 km/h</div>
+    <div class="ctrl-left" id="left-panel"></div>
+    <div class="ctrl-right">
+      <button id="main-btn" onclick="onMainAction()">
+        <span id="btn-main-txt">揮棒</span>
+        <span class="sub" id="btn-sub-txt">SWING</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="face-modal">
+    <div class="modal-card">
+      <div class="modal-title">🎭 大巨蛋 9 款王牌造型圖鑑</div>
+      <div class="modal-desc">點選切換主打者外觀（對戰模式 1~9 棒隊友也會全陣容輪番上陣！）</div>
+      <div class="face-grid" id="face-grid"></div>
+      <button class="modal-btn" onclick="closeFaceModal()">✅ 確認造型</button>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="result-modal">
+    <div class="modal-card">
+      <div class="modal-title" id="m-title">🏆 冠軍榮耀戰報</div>
+      <div class="vic-header">
+        <canvas id="vic-cv" width="60" height="60"></canvas>
+        <div>
+          <div style="font-size:10px;color:#cbd5e1;font-weight:800;" id="m-sub">大巨蛋最終比數</div>
+          <div class="vic-score" id="m-score">5 : 2</div>
+        </div>
+        <div class="rank-badge" id="m-rank">S</div>
+      </div>
+      <div class="vic-grid" id="m-grid"></div>
+      <div style="display:flex; gap:8px;">
+        <button class="modal-btn" style="background:#475569;" onclick="goHome()">🏠 回封面</button>
+        <button class="modal-btn" onclick="restartGame()">🔥 再戰一場</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const canvas = document.getElementById('cv');
+const ctx = canvas.getContext('2d');
+let W = window.innerWidth, H = window.innerHeight, DPR = Math.min(3, window.devicePixelRatio || 1);
+function resize() {
+  W = window.innerWidth; H = window.innerHeight;
+  DPR = Math.min(3, window.devicePixelRatio || 1);
+  canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+const FACES = [
+  { id: 'EYEBLACK', name: '⚡ 迷彩戰紋', desc: '遮陽戰紋+露齒笑', skin: '#fde68a' },
+  { id: 'BEARD',    name: '🧔 霸氣絡腮鬍', desc: '濃密落腮鬍重砲', skin: '#fcd34d' },
+  { id: 'GLASSES',  name: '🕶️ 炫彩墨鏡', desc: '鍍膜太陽眼鏡', skin: '#fde68a' },
+  { id: 'CAMO',     name: '🪖 特戰迷彩臉', desc: '叢林油彩+頭帶', skin: '#fde68a' },
+  { id: 'SCAR_GUM', name: '🍬 刀疤泡泡糖', desc: '十字刀疤+吹泡泡', skin: '#fde68a' },
+  { id: 'MUSTACHE', name: '🥸 翹鬍子眼鏡', desc: '金框眼鏡+八字鬍', skin: '#fde68a' },
+  { id: 'AFRO_MIC', name: '🎧 電競黑人王', desc: '耳機+金鍊重砲', skin: '#854d0e' },
+  { id: 'PIRATE',   name: '🏴‍☠️ 獨眼海盜王', desc: '黑眼罩+霸氣刀疤', skin: '#d97706' },
+  { id: 'SAIYAN',   name: '🔥 紅髮戰神', desc: '狂野紅冠+殺氣眼', skin: '#fde68a' }
+];
+
+const BATS = [
+  { id: 'ALU',     name: '🔩 甲子園鋁棒', bonus: 3,  color: '#e2e8f0', trail: '#38bdf8', sfx: 'BAT_ALU', cost: 0, unlocked: true },
+  { id: 'WOOD',    name: '🪵 職業楓木棒', bonus: 1,  color: '#d97706', trail: '#fde047', sfx: 'BAT_WOOD', cost: 0, unlocked: true },
+  { id: 'FIRE',    name: '🔥 烈焰重砲棒', bonus: 6,  color: '#ef4444', trail: '#f97316', sfx: 'BAT_FIRE', cost: 100, unlocked: false },
+  { id: 'THUNDER', name: '⚡ 雷神黃金棒', bonus: 10, color: '#facc15', trail: '#a855f7', sfx: 'BAT_THUNDER', cost: 250, unlocked: false }
+];
+
+const SKIES = [
+  { id: 'DOME', label: '🏟️ 大巨蛋', top: '#091326', bot: '#1e293b', grass1: '#0d9488', grass2: '#0f766e', dome: true },
+  { id: 'NIGHT', label: '🌙 夜戰', top: '#020617', bot: '#0f172a', grass1: '#059669', grass2: '#047857', dome: false },
+  { id: 'DUSK', label: '🌅 黃昏', top: '#4c1d95', bot: '#ea580c', grass1: '#16a34a', grass2: '#15803d', dome: false }
+];
+
+const PITCH_TYPES = [
+  { name: '🔥 四縫線直球', speed: 155, step: 0.025, cx: 0,   cy: -8,  color: '#ef4444', chaseBonus: 0.05 },
+  { name: '⚡ 犀利滑球',   speed: 138, step: 0.019, cx: 62,  cy: -16, color: '#eab308', chaseBonus: 0.25 },
+  { name: '🌈 大曲球',     speed: 122, step: 0.014, cx: 24,  cy: -62, color: '#38bdf8', chaseBonus: 0.22 },
+  { name: '🍃 變速球',     speed: 132, step: 0.017, cx: -42, cy: -28, color: '#4ade80', chaseBonus: 0.28 }
+];
+
+const FIELDERS_BASE = [
+  { role: 'LF', rx: -0.29, ry: 0.30, faceIdx: 2 },
+  { role: 'CF', rx:  0.00, ry: 0.25, faceIdx: 6 },
+  { role: 'RF', rx:  0.29, ry: 0.30, faceIdx: 4 },
+  { role: '3B', rx: -0.26, ry: 0.46, faceIdx: 7 },
+  { role: 'SS', rx: -0.12, ry: 0.41, faceIdx: 3 },
+  { role: '2B', rx:  0.12, ry: 0.41, faceIdx: 5 },
+  { role: '1B', rx:  0.26, ry: 0.46, faceIdx: 1 }
+];
+
+let audioCtx = null, sharedNoiseBuf = null, soundEnabled = true, bgmEnabled = true, bgmTimer = null, bgmStep = 0, iosUnlocked = false;
+const MELODY = [523.25, 659.25, 783.99, 1046.5, 880, 783.99, 659.25, 587.33, 523.25, 587.33, 659.25, 783.99, 659.25, 523.25, 587.33, 783.99];
+const BASS = [130.81, 130.81, 196, 196, 220, 220, 196, 196, 174.61, 174.61, 130.81, 130.81, 146.83, 146.83, 196, 196];
+
+function ensureAudio(playTest = false) {
+  try {
+    if (!audioCtx || audioCtx.state === 'closed') {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AC();
+      sharedNoiseBuf = audioCtx.createBuffer(1, audioCtx.sampleRate, audioCtx.sampleRate);
+      const d = sharedNoiseBuf.getChannelData(0);
+      for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    }
+    if (audioCtx.state !== 'running') audioCtx.resume();
+    if (playTest && !iosUnlocked) {
+      const a = new Audio('data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA');
+      a.volume = 0.01; a.play().catch(() => {}); iosUnlocked = true;
+    }
+    return audioCtx;
+  } catch (e) { return null; }
+}
+
+function playTone(ac, type, freq, start, dur, vol, endFreq = null) {
+  const o = ac.createOscillator(), g = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(freq, start);
+  if (endFreq) o.frequency.exponentialRampToValueAtTime(endFreq, start + dur * 0.9);
+  g.gain.setValueAtTime(vol, start); g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+  o.connect(g); g.connect(ac.destination); o.start(start); o.stop(start + dur + 0.01);
+}
+
+function playNoise(ac, start, dur, freq, vol) {
+  if (!sharedNoiseBuf) return;
+  const s = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+  s.buffer = sharedNoiseBuf; f.type = 'bandpass'; f.frequency.setValueAtTime(freq, start);
+  g.gain.setValueAtTime(vol, start); g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+  s.connect(f); f.connect(g); g.connect(ac.destination); s.start(start); s.stop(start + dur + 0.01);
+}
+
+function playBgmTick() {
+  if (!bgmEnabled || !soundEnabled || document.hidden) return;
+  const ac = ensureAudio(false);
+  if (!ac || ac.state !== 'running') return;
+  const now = ac.currentTime, idx = bgmStep % MELODY.length;
+  playTone(ac, 'square', MELODY[idx], now, 0.14, 0.032);
+  playTone(ac, 'triangle', BASS[idx], now, 0.16, 0.048);
+  if (bgmStep % 2 === 1) playNoise(ac, now, 0.03, 1800, 0.025);
+  bgmStep++;
+}
+
+function startBGM() {
+  if (bgmTimer) clearInterval(bgmTimer);
+  ensureAudio(true); playBgmTick(); bgmTimer = setInterval(playBgmTick, 185);
+}
+
+function stopBGM() {
+  if (bgmTimer) { clearInterval(bgmTimer); bgmTimer = null; }
+  if (audioCtx && audioCtx.state === 'running') audioCtx.suspend().catch(() => {});
+}
+['visibilitychange', 'pagehide', 'blur'].forEach(ev => window.addEventListener(ev, () => stopBGM()));
+
+function toggleBGM() {
+  ensureAudio(true); bgmEnabled = !bgmEnabled;
+  if (bgmEnabled) startBGM(); else stopBGM();
+  updateLobbyUI();
+}
+
+function toggleSound() {
+  ensureAudio(true); soundEnabled = !soundEnabled;
+  if (soundEnabled) { playSfx('MITT_STRIKE'); if (bgmEnabled) startBGM(); } else stopBGM();
+  updateLobbyUI();
+}
+
+function playUmpireVoice(callType) {
+  if (!soundEnabled) return;
+  const ac = ensureAudio(false); if (!ac) return;
+  const now = ac.currentTime;
+  if (callType === 'STRIKE') {
+    playTone(ac, 'sawtooth', 175, now, 0.34, 0.42, 260);
+    playTone(ac, 'triangle', 520, now, 0.34, 0.32, 760);
+    playNoise(ac, now, 0.18, 1600, 0.32);
+  } else if (callType === 'BALL') {
+    playTone(ac, 'sawtooth', 140, now, 0.25, 0.36, 110);
+    playTone(ac, 'triangle', 360, now, 0.25, 0.28, 280);
+  } else if (callType === 'OUT') {
+    playTone(ac, 'sawtooth', 210, now, 0.32, 0.45, 130);
+    playTone(ac, 'square', 620, now, 0.32, 0.28, 390);
+    playNoise(ac, now, 0.2, 1300, 0.35);
+  } else if (callType === 'SAFE') {
+    playTone(ac, 'triangle', 330, now, 0.3, 0.36, 520);
+    playTone(ac, 'sine', 660, now, 0.3, 0.28, 880);
+  }
+}
+
+function playSfx(type) {
+  if (!soundEnabled) return;
+  const ac = ensureAudio(false); if (!ac) return;
+  const now = ac.currentTime;
+  if (type === 'PERFECT_HIT') {
+    [1318.5, 1760, 2637, 3520].forEach((f, i) => playTone(ac, 'triangle', f, now + i * 0.025, 0.55, 0.32 / (i + 1), f * 0.98));
+    playNoise(ac, now, 0.06, 2800, 0.55);
+  } else if (type === 'BAT_ALU' || type === 'BAT_THUNDER') {
+    [1650, 2480, 3720].forEach((f, i) => playTone(ac, i === 0 ? 'triangle' : 'sine', f, now, 0.42, 0.28 / (i + 1), f * 0.96));
+    playNoise(ac, now, 0.04, 2400, 0.45);
+  } else if (type === 'BAT_WOOD' || type === 'BAT_FIRE') {
+    playTone(ac, 'triangle', type === 'BAT_FIRE' ? 320 : 420, now, 0.1, 0.6, 85);
+    playNoise(ac, now, 0.05, 1650, 0.6);
+  } else if (type === 'MITT_STRIKE') {
+    playNoise(ac, now, 0.06, 950, 0.6); playUmpireVoice('STRIKE');
+  } else if (type === 'MITT_BALL') {
+    playNoise(ac, now, 0.05, 520, 0.35); playUmpireVoice('BALL');
+  } else if (type === 'STRIKEOUT') {
+    playNoise(ac, now, 0.07, 1100, 0.6); playUmpireVoice('STRIKE');
+    setTimeout(() => playUmpireVoice('OUT'), 90);
+  } else if (type === 'HOMERUN' || type === 'CROWD_ROAR') {
+    [523.25, 659.25, 783.99, 1046.5, 1318.5].forEach((f, i) => playTone(ac, type === 'CROWD_ROAR' ? 'sawtooth' : 'triangle', f, now + i * 0.07, 0.9, 0.2));
+    playNoise(ac, now + 0.05, type === 'CROWD_ROAR' ? 1.4 : 0.9, 1050, type === 'CROWD_ROAR' ? 0.5 : 0.28);
+  } else if (type === 'WHIFF') {
+    playNoise(ac, now, 0.1, 380, 0.35); playUmpireVoice('STRIKE');
+  } else if (type === 'HBP') {
+    playTone(ac, 'sine', 150, now, 0.18, 0.65, 55);
+    playNoise(ac, now, 0.08, 600, 0.55); playUmpireVoice('SAFE');
+  }
+}
+
+const G = {
+  screen: 'TITLE', gameMode: 'DERBY', skyIdx: 0, batIdx: 0, playerFaceIdx: 0, animTick: 0,
+  coins: 120, careerMaxDist: 0, hrCount: 0, maxDist: 0, combo: 0, hitStreak: 0, derbyOutsLeft: 10,
+  inning: 1, isTop: true, myScore: 0, aiScore: 0, myHits: 0, mySO: 0, coinsEarnedThisGame: 0,
+  balls: 0, strikes: 0, outs: 0, batterOrderIdx: 0, aiBatterOrderIdx: 0,
+  bases: [null, null, null], movingRunners: [],
+  targets: [
+    { label: '🎯賞金+50', bonus: 50, rx: -0.31, w: 62, color: '#38bdf8', hitTimer: 0 },
+    { label: '🚗豪車+100', bonus: 100, rx: 0.31, w: 66, color: '#facc15', hitTimer: 0 }
+  ],
+  state: 'WAIT', stateTicks: 0, powerMode: false, buntMode: false, energy: 3, ultActive: false, userPitchIdx: 0,
+  lastPitchIdx: null, samePitchCount: 0,
+  aimX: 0, aimY: 0, ringScale: 2.0, ringDir: -1,
+  pitchSeq: 0, pitchHistory: [],
+  fielders: FIELDERS_BASE.map(f => ({ ...f, curX: f.rx, curY: f.ry, jump: 0, diveAngle: 0, actionText: '', actionColor: '#fff', throwProg: 0 })),
+  pitch: null, hit: null, hitStopFrames: 0, slowMoFrames: 0, shakeFrames: 0, goldFlash: 0,
+  perfectFX: { timer: 0, x: 0, y: 0, sub: '' }, playFX: { timer: 0, text: '', sub: '', color: '', x: 0, y: 0 },
+  mittSnap: { timer: 0, x: 0, y: 0, isStrike: true }, umpire: { text: '', color: '#fff', timer: 0, armUp: false },
+  crowdCheerTimer: 0, bannerText: '大巨蛋 v5.6.8 終極定案版', bannerColor: '#facc15', particles: [],
+  userRightBox: false, userSideOverride: undefined
+};
+
+function saveData() {
+  try {
+    localStorage.setItem('BLAST_BB_V568', JSON.stringify({
+      coins: G.coins, careerMaxDist: G.careerMaxDist, playerFaceIdx: G.playerFaceIdx, batIdx: G.batIdx, unlocked: BATS.map(b => b.unlocked)
+    }));
+  } catch (e) {}
+}
+function loadData() {
+  try {
+    const d = JSON.parse(localStorage.getItem('BLAST_BB_V568') || 'null');
+    if (!d) return;
+    if (Number.isFinite(d.coins)) G.coins = d.coins;
+    if (Number.isFinite(d.careerMaxDist)) G.careerMaxDist = d.careerMaxDist;
+    if (Number.isFinite(d.playerFaceIdx)) G.playerFaceIdx = d.playerFaceIdx % FACES.length;
+    if (Array.isArray(d.unlocked)) d.unlocked.forEach((u, i) => { if (BATS[i]) BATS[i].unlocked = !!u; });
+    if (Number.isFinite(d.batIdx) && BATS[d.batIdx] && BATS[d.batIdx].unlocked) G.batIdx = d.batIdx;
+  } catch (e) {}
+}
+loadData();
+
+function getAIBatterTrait(orderNum) {
+  if ([1, 2, 9].includes(orderNum)) return { id: 'CONTACT', label: '🏃快腿', chaseMod: -0.06, whiffMod: -0.05, powerMult: 0.90 };
+  if ([3, 4, 5].includes(orderNum)) return { id: 'SLUGGER', label: '💪重砲', chaseMod: 0.02, whiffMod: 0.06, powerMult: 1.15 };
+  return { id: 'AGGRO', label: '⚡狙擊', chaseMod: 0.09, whiffMod: 0.02, powerMult: 1.00 };
+}
+
+function getCurrentBatterInfo() {
+  if (G.gameMode === 'DERBY') return { faceIdx: G.playerFaceIdx, orderNum: 1, isOnFire: G.combo >= 2, isRightBox: !!G.userRightBox, trait: null };
+  if (G.isTop) {
+    const faceIdx = (G.playerFaceIdx + G.batterOrderIdx) % FACES.length;
+    const orderNum = (G.batterOrderIdx % 9) + 1;
+    const defaultRight = (orderNum % 2 === 0);
+    return { faceIdx, orderNum, isOnFire: G.combo >= 2 || G.hitStreak >= 2, isRightBox: G.userSideOverride !== undefined ? G.userSideOverride : defaultRight, trait: null };
+  }
+  const aiFace = (G.aiBatterOrderIdx + 3) % FACES.length, aiOrder = (G.aiBatterOrderIdx % 9) + 1;
+  return { faceIdx: aiFace, orderNum: aiOrder, isOnFire: false, isRightBox: aiOrder % 2 === 0, trait: getAIBatterTrait(aiOrder) };
+}
+
+function getZone() {
+  const isLand = W > H, cx = W * 0.5, cy = isLand ? H * 0.61 : H * 0.655;
+  const zw = isLand ? Math.min(44, H * 0.11) : Math.min(36, W * 0.095);
+  const zh = isLand ? Math.min(50, H * 0.125) : Math.min(44, W * 0.115);
+  const moundY = isLand ? H * 0.485 : H * 0.53;
+  const wallY  = isLand ? H * 0.21 : H * 0.24;
+  return { cx, cy, x: cx - zw / 2, y: cy - zh / 2, w: zw, h: zh, moundX: cx, moundY, wallY, isLand };
+}
+
+function getZoneDistances(px, py, z) {
+  const outX = Math.max(0, z.x - px, px - (z.x + z.w));
+  const outY = Math.max(0, z.y - py, py - (z.y + z.h));
+  const outDist = Math.hypot(outX, outY);
+  return { outDist, isStrike: outDist <= 4.5 };
+}
+
+const zInit = getZone(); G.aimX = zInit.cx; G.aimY = zInit.cy;
+
+let isDraggingAim = false;
+function updateAimFromPointer(clientX, clientY) {
+  const z = getZone();
+  G.aimX = Math.max(z.x - 42, Math.min(z.x + z.w + 42, clientX));
+  G.aimY = Math.max(z.y - 42, Math.min(z.y + z.h + 42, clientY));
+}
+canvas.addEventListener('pointerdown', e => {
+  if (G.screen !== 'PLAY') return;
+  const z = getZone(), homeY = z.cy + z.h * 0.55;
+  const bInfo = getCurrentBatterInfo();
+  const oppBoxX = bInfo.isRightBox ? (z.cx - z.w * 0.5 - 30) : (z.cx + z.w * 0.5 + 30);
+  if ((G.gameMode === 'DERBY' || G.isTop) && Math.abs(e.clientX - oppBoxX) < 26 && Math.abs(e.clientY - (homeY - 10)) < 32) {
+    toggleBatterSide(); return;
+  }
+  isDraggingAim = true; updateAimFromPointer(e.clientX, e.clientY);
+});
+canvas.addEventListener('pointermove', e => { if (isDraggingAim && G.screen === 'PLAY') updateAimFromPointer(e.clientX, e.clientY); });
+window.addEventListener('pointerup', () => { isDraggingAim = false; });
+
+function safeCircle(c, x, y, r) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  c.beginPath(); c.arc(x, y, Math.max(0.5, Number(r) || 1), 0, Math.PI * 2);
+}
+
+function drawCatcherMitt(c, x, y, scale, ringColor = '#facc15', alpha = 1) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  c.save(); c.globalAlpha = alpha; c.translate(x, y); c.scale(scale, scale);
+  c.strokeStyle = ringColor; c.lineWidth = 2.2; safeCircle(c, 0, 0, 16); c.stroke();
+  c.fillStyle = '#78350f'; c.strokeStyle = '#451a03'; c.lineWidth = 2; safeCircle(c, 0, 0, 12.5); c.fill(); c.stroke();
+  c.fillStyle = '#b45309'; safeCircle(c, 0, 1, 8.2); c.fill();
+  c.fillStyle = '#ffffff'; c.strokeStyle = '#ef4444'; c.lineWidth = 1.4; safeCircle(c, 0, 1, 4.8); c.fill(); c.stroke();
+  c.restore();
+}
+
+function drawChibi(c, x, y, scale, color, role, swingProg = 0, jumpY = 0, faceIdx = 0, diveAngle = 0, isOnFire = false) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  c.save();
+  c.translate(x, y - (Number(jumpY) || 0));
+  if (diveAngle) c.rotate(diveAngle);
+  c.scale(scale, scale);
+
+  const safeIdx = Math.abs(Math.floor(Number(faceIdx) || 0)) % FACES.length;
+  const fObj = FACES[safeIdx] || FACES[0], faceId = fObj.id;
+
+  if (isOnFire) {
+    const fg = c.createRadialGradient(0, -10, 4, 0, -12, 34 + Math.sin(G.animTick * 0.25) * 5);
+    fg.addColorStop(0, 'rgba(254,240,138,0.85)'); fg.addColorStop(0.5, 'rgba(249,115,22,0.55)'); fg.addColorStop(1, 'rgba(239,68,68,0)');
+    c.fillStyle = fg; safeCircle(c, 0, -12, 36); c.fill();
+  }
+
+  c.fillStyle = 'rgba(0,0,0,0.34)';
+  c.beginPath(); c.ellipse(0, 26, 17, 5.5, 0, 0, Math.PI * 2); c.fill();
+
+  c.fillStyle = (role === 'UMPIRE' || role === 'BASE_UMP') ? '#0f172a' : '#ffffff';
+  c.strokeStyle = '#0f172a'; c.lineWidth = 2.4;
+  c.fillRect(-13, -4, 26, 24); c.strokeRect(-13, -4, 26, 24);
+  c.fillStyle = color; c.fillRect(-13, 2, 26, 7);
+
+  if (faceId === 'AFRO_MIC' && role !== 'UMPIRE' && role !== 'BASE_UMP') {
+    c.strokeStyle = '#facc15'; c.lineWidth = 2.8;
+    c.beginPath(); c.arc(0, 1, 8, 0.1 * Math.PI, 0.9 * Math.PI); c.stroke();
+  }
+
+  c.fillStyle = (role === 'UMPIRE' || role === 'BASE_UMP') ? '#713f12' : fObj.skin;
+  safeCircle(c, 0, -18, 16.5); c.fill(); c.stroke();
+
+  if (role === 'UMPIRE') {
+    c.fillStyle = '#e2e8f0'; c.fillRect(-6, -11, 12, 3.5);
+    c.strokeStyle = '#94a3b8'; c.lineWidth = 1.8; c.strokeRect(-11, -24, 22, 12);
+    if (G.umpire.armUp && G.umpire.timer > 0) {
+      c.strokeStyle = '#0f172a'; c.lineWidth = 6; c.beginPath(); c.moveTo(13, 2); c.lineTo(28, -19); c.stroke();
+      c.fillStyle = '#713f12'; safeCircle(c, 28, -19, 4.5); c.fill();
+    }
+  } else if (role === 'BASE_UMP') {
+    c.fillStyle = '#0f172a'; safeCircle(c, -5, -18, 2); c.fill(); safeCircle(c, 5, -18, 2); c.fill();
+  } else {
+    if (faceId === 'CAMO') {
+      c.fillStyle = 'rgba(21,128,61,0.55)'; c.fillRect(-12, -21, 9, 3); c.fillRect(4, -16, 8, 3);
+    } else if (faceId === 'EYEBLACK' || faceId === 'AFRO_MIC') {
+      c.fillStyle = faceId === 'AFRO_MIC' ? '#facc15' : '#0f172a';
+      c.fillRect(-12, -14, 7, 2.8); c.fillRect(5, -14, 7, 2.8);
+      c.fillStyle = '#fff'; c.fillRect(-5, -9, 10, 3.5);
+    } else if (faceId === 'BEARD') {
+      c.fillStyle = '#451a03'; c.beginPath(); c.arc(0, -15, 16.2, 0.12 * Math.PI, 0.88 * Math.PI); c.fill();
+    } else if (faceId === 'MUSTACHE') {
+      c.strokeStyle = '#3b0764'; c.lineWidth = 2.6;
+      c.beginPath(); c.moveTo(0, -11); c.quadraticCurveTo(-6, -13, -11, -9); c.moveTo(0, -11); c.quadraticCurveTo(6, -13, 11, -9); c.stroke();
+    } else if (faceId === 'SCAR_GUM') {
+      c.strokeStyle = '#be123c'; c.lineWidth = 1.6;
+      c.beginPath(); c.moveTo(-11, -16); c.lineTo(-6, -10); c.moveTo(-11, -12); c.lineTo(-6, -15); c.stroke();
+      c.fillStyle = '#f472b6'; safeCircle(c, 3, -9, 5.2 + Math.sin(G.animTick * 0.08) * 1.2); c.fill();
+    } else if (faceId === 'PIRATE') {
+      c.fillStyle = '#0f172a'; safeCircle(c, -6, -18, 5.2); c.fill();
+      c.lineWidth = 2; c.beginPath(); c.moveTo(-15, -22); c.lineTo(14, -14); c.stroke();
+    }
+
+    if (faceId === 'GLASSES') {
+      c.fillStyle = '#facc15'; c.strokeStyle = '#0f172a'; c.lineWidth = 1.8;
+      c.fillRect(-13, -22, 12, 7); c.strokeRect(-13, -22, 12, 7);
+      c.fillRect(1, -22, 12, 7); c.strokeRect(1, -22, 12, 7);
+    } else if (faceId !== 'PIRATE') {
+      c.fillStyle = '#0f172a'; safeCircle(c, -5.5, -18, 2.4); c.fill(); safeCircle(c, 5.5, -18, 2.4); c.fill();
+    }
+    if (faceId === 'AFRO_MIC') {
+      c.fillStyle = '#38bdf8'; c.fillRect(-19, -22, 4, 10); c.fillRect(15, -22, 4, 10);
+    }
+  }
+
+  c.fillStyle = (role === 'UMPIRE' || role === 'BASE_UMP') ? '#1e293b' : color;
+  c.strokeStyle = '#0f172a'; c.lineWidth = 2.2;
+  if (faceId === 'SAIYAN' && role !== 'UMPIRE' && role !== 'BASE_UMP' && role !== 'FIELDER') {
+    c.fillStyle = '#ef4444';
+    c.beginPath(); c.moveTo(-16, -21); c.lineTo(-22, -34); c.lineTo(-8, -28); c.lineTo(0, -38); c.lineTo(8, -28); c.lineTo(22, -34); c.lineTo(16, -21); c.closePath(); c.fill(); c.stroke();
+  } else {
+    c.beginPath(); c.arc(0, -21, 17, Math.PI, 0); c.fill(); c.stroke();
+  }
+
+  if (role === 'BATTER' || role === 'BATTER_R') {
+    const curBat = BATS[G.batIdx];
+    c.save();
+    if (role === 'BATTER_R') c.scale(-1, 1);
+    c.rotate(swingProg > 0 ? -1.85 : 0.38);
+    c.fillStyle = '#1e293b'; c.strokeStyle = '#0f172a'; c.lineWidth = 1.8;
+    safeCircle(c, 12.5, -1, 3.6); c.fill(); c.stroke();
+    c.fillRect(10.8, -14, 3.4, 12); c.strokeRect(10.8, -14, 3.4, 12);
+    c.fillStyle = isOnFire ? '#facc15' : curBat.color;
+    c.beginPath(); c.moveTo(10.8, -14); c.lineTo(8.2, -41); c.arc(12.5, -41, 4.3, Math.PI, 0, false); c.lineTo(14.2, -14); c.closePath(); c.fill(); c.stroke();
+    c.strokeStyle = 'rgba(255,255,255,0.65)'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(11.4, -16); c.lineTo(10.4, -39); c.stroke();
+    c.restore();
+  } else if (role !== 'UMPIRE' && role !== 'BASE_UMP') {
+    c.fillStyle = '#92400e'; safeCircle(c, 15, 4, 7.5); c.fill(); c.stroke();
+  }
+  c.restore();
+}
+
+function openFaceModal() {
+  ensureAudio(true);
+  const grid = document.getElementById('face-grid'); grid.innerHTML = '';
+  FACES.forEach((f, idx) => {
+    const item = document.createElement('div');
+    item.className = 'face-item ' + (G.playerFaceIdx === idx ? 'active' : '');
+    item.innerHTML = `<div class="face-name">${f.name}</div><div class="face-desc">${f.desc}</div>`;
+    const mCv = document.createElement('canvas');
+    mCv.width = Math.round(68 * DPR); mCv.height = Math.round(68 * DPR);
+    const mc = mCv.getContext('2d');
+    mc.setTransform(DPR, 0, 0, DPR, 0, 0);
+    drawChibi(mc, 34, 46, 1.15, '#2563eb', 'BATTER', 0, 0, idx);
+    item.prepend(mCv);
+    item.onclick = () => { G.playerFaceIdx = idx; saveData(); updateLobbyUI(); updateHUD(); openFaceModal(); };
+    grid.appendChild(item);
+  });
+  document.getElementById('face-modal').classList.add('show');
+}
+function closeFaceModal() { document.getElementById('face-modal').classList.remove('show'); }
+
+function toggleBatterSide() {
+  ensureAudio(true);
+  if (G.gameMode === 'DERBY') G.userRightBox = !G.userRightBox;
+  else G.userSideOverride = !getCurrentBatterInfo().isRightBox;
+  showStatPill(`⚾ 已切換為【${getCurrentBatterInfo().isRightBox ? '右打席' : '左打席'}】`);
+  updateHUD();
+}
+
+function updateLobbyUI() {
+  document.title = '爆裂野球魂 v5.6.8：大巨蛋終極定案版';
+  const sky = SKIES[G.skyIdx];
+  document.getElementById('lobby-coin').innerText = `🪙 ${G.coins} · 最遠 ${G.careerMaxDist} ft`;
+  document.getElementById('lobby-face-txt').innerText = FACES[G.playerFaceIdx].name;
+  document.getElementById('lobby-bat-txt').innerText = BATS[G.batIdx].name;
+  document.getElementById('lobby-sky-btn').innerText = sky.label;
+  document.getElementById('sky-btn').innerText = sky.label;
+  document.getElementById('lobby-bgm-btn').innerText = bgmEnabled ? '🎵 音樂開' : '🔇 音樂關';
+  document.getElementById('bgm-btn').innerText = bgmEnabled ? '🎵音樂' : '🔇音樂';
+  document.getElementById('lobby-snd-btn').innerText = soundEnabled ? '🔊 音效開' : '🔇 靜音';
+  document.getElementById('snd-btn').innerText = soundEnabled ? '🔊音效' : '🔇靜音';
+}
+
+function enterGame(mode) {
+  ensureAudio(true); if (bgmEnabled) startBGM(); playSfx('HOMERUN');
+  G.gameMode = mode; G.screen = 'PLAY';
+  document.getElementById('title-screen').classList.add('hidden');
+  document.getElementById('game-ui').classList.remove('hidden');
+  restartGame();
+}
+
+function goHome() {
+  clearTimeout(nextTimer); stopBGM();
+  document.getElementById('result-modal').classList.remove('show');
+  document.getElementById('game-ui').classList.add('hidden');
+  document.getElementById('title-screen').classList.remove('hidden');
+  G.screen = 'TITLE'; updateLobbyUI();
+}
+
+function cycleSky() {
+  ensureAudio(true);
+  G.skyIdx = (G.skyIdx + 1) % SKIES.length;
+  updateLobbyUI();
+}
+
+function cycleBat() {
+  ensureAudio(true);
+  const nextIdx = (G.batIdx + 1) % BATS.length, bat = BATS[nextIdx];
+  if (!bat.unlocked) {
+    if (G.coins >= bat.cost) {
+      G.coins -= bat.cost; bat.unlocked = true; G.batIdx = nextIdx;
+      G.bannerText = `🎉 解鎖 ${bat.name}！`; G.bannerColor = '#facc15'; playSfx(bat.sfx); saveData();
+    } else { G.bannerText = `💰 金幣不足 (${G.coins}/${bat.cost})`; G.bannerColor = '#f87171'; }
+  } else { G.batIdx = nextIdx; G.bannerText = `裝備：${bat.name}`; G.bannerColor = '#38bdf8'; playSfx(bat.sfx); saveData(); }
+  updateLobbyUI(); updateHUD();
+}
+
+function addEnergy(amt) { G.energy = Math.max(0, Math.min(3, (G.energy || 0) + amt)); }
+function setPower(val) { ensureAudio(true); G.powerMode = val; G.buntMode = false; updateHUD(); }
+function toggleBunt() { ensureAudio(true); G.buntMode = !G.buntMode; if (G.buntMode) G.ultActive = false; updateHUD(); }
+
+function toggleUltimate() {
+  ensureAudio(true);
+  if (G.energy < 3) { showStatPill(`⚡ 氣力不足 (${G.energy}/3)！`); return; }
+  G.ultActive = !G.ultActive;
+  if (G.ultActive) {
+    G.buntMode = false; playSfx('BAT_THUNDER');
+    G.bannerText = (G.gameMode === 'DERBY' || G.isTop) ? '🔥 必殺【霸王全壘打斬】啟動！' : '⚡ 必殺【168km 閃電魔球】裝填！';
+    G.bannerColor = '#facc15'; showStatPill(G.bannerText);
+  }
+  syncUserPitchTag(); updateHUD();
+}
+
+function syncUserPitchTag() {
+  const pInfo = document.getElementById('pitch-info');
+  if (!pInfo) return;
+  if (!G.isTop && G.ultActive) {
+    pInfo.innerText = '⚡ 必殺閃電魔球 168 km/h'; pInfo.style.borderColor = '#facc15'; pInfo.style.color = '#fde047'; return;
+  }
+  const p = PITCH_TYPES[G.userPitchIdx] || PITCH_TYPES[0];
+  pInfo.innerText = `${p.name} ${p.speed} km/h`; pInfo.style.borderColor = p.color; pInfo.style.color = p.color;
+}
+
+function selectPitch(idx) { ensureAudio(true); G.userPitchIdx = idx; G.ultActive = false; syncUserPitchTag(); updateHUD(); }
+
+function updateHUD() {
+  const hud = document.getElementById('hud-box'), bInfo = getCurrentBatterInfo();
+  const fireTag = bInfo.isOnFire ? ' 🔥' : '', eBars = '⚡'.repeat(G.energy) + '·'.repeat(3 - G.energy);
+  const sideTag = bInfo.isRightBox ? '右打' : '左打';
+  const traitTag = (!G.isTop && bInfo.trait) ? `·${bInfo.trait.label}` : `(${sideTag})`;
+  if (G.gameMode === 'DERBY') {
+    hud.innerHTML = `<div class="ver-tag"><span>🏆 全壘打大賽(${sideTag})${fireTag}</span><span>🪙${G.coins}</span></div>
+      <div class="stat-line"><span>🎆 全壘打</span><span class="val">${G.hrCount} (連${G.combo})</span></div>
+      <div class="stat-line"><span>📏 本場最遠</span><span class="val">${G.maxDist}ft</span></div>
+      <div class="stat-line"><span>⚾ 剩餘/氣力</span><span class="val red">${G.derbyOutsLeft}局 · ${eBars}</span></div>`;
+  } else {
+    const bD = [0,1,2].map(i => `<i class="dot ${i < G.balls ? 'b' : ''}"></i>`).join('');
+    const sD = [0,1].map(i => `<i class="dot ${i < G.strikes ? 's' : ''}"></i>`).join('');
+    const oD = [0,1].map(i => `<i class="dot ${i < G.outs ? 'o' : ''}"></i>`).join('');
+    hud.innerHTML = `<div class="ver-tag"><span>⚾ ${G.inning}局${G.isTop ? '上' : '下'}·${bInfo.orderNum}棒${traitTag}${fireTag}</span><span>🪙${G.coins}</span></div>
+      <div class="stat-line"><span>⚡ 閃電(你)</span><span class="val">${G.myScore} (${eBars})</span></div>
+      <div class="stat-line"><span>🔥 烈焰(AI)</span><span class="val red">${G.aiScore}</span></div>
+      <div class="bso-row"><span>B${bD}</span><span>S${sD}</span><span>O${oD}</span></div>`;
+  }
+
+  const left = document.getElementById('left-panel'), mainBtn = document.getElementById('main-btn');
+  const bTxt = document.getElementById('btn-main-txt'), sTxt = document.getElementById('btn-sub-txt');
+  const ultCls = G.ultActive ? 'opt-btn ult-active' : (G.energy >= 3 ? 'opt-btn ult-ready' : 'opt-btn');
+
+  if (G.gameMode === 'DERBY' || G.isTop) {
+    mainBtn.classList.remove('pitch-mode');
+    bTxt.innerText = G.buntMode ? '短打' : (G.ultActive ? '霸王斬' : '揮棒');
+    sTxt.innerText = G.buntMode ? 'BUNT' : (G.ultActive ? 'ULTIMATE' : 'SWING');
+    const canSteal = G.gameMode === 'MATCH' && G.isTop && ((G.bases[0] !== null && G.bases[1] === null) || (G.bases[1] !== null && G.bases[2] === null));
+    const ultLbl = G.ultActive ? '🔥 霸王斬已開!' : (G.energy >= 3 ? '🔥 必殺霸王斬!' : `⚡ 氣力 (${G.energy}/3)`);
+    let html = `<button class="bat-btn" onclick="cycleBat()">${BATS[G.batIdx].name}</button>
+      <div class="tactic-row">
+        <button class="opt-btn ${!G.powerMode && !G.buntMode ? 'active' : ''}" onclick="setPower(false)">⚡巧打</button>
+        <button class="opt-btn ${G.powerMode && !G.buntMode ? 'active' : ''}" onclick="setPower(true)">💥強振</button>
+      </div>
+      <button class="${ultCls}" onclick="toggleUltimate()">${ultLbl}</button>`;
+    if (G.gameMode === 'MATCH') {
+      html += `<div class="tactic-row">
+        <button class="opt-btn ${G.buntMode ? 'active' : ''}" onclick="toggleBunt()">🎯短打</button>
+        <button class="opt-btn" style="${canSteal ? 'border-color:#4ade80;color:#4ade80;' : 'opacity:0.45;'}" onclick="attemptSteal()">🏃盜壘</button>
+      </div>`;
+    }
+    html += `<button class="opt-btn" onclick="toggleBatterSide()">🔄 切換左/右打席</button>`;
+    left.innerHTML = html;
+  } else {
+    mainBtn.classList.add('pitch-mode');
+    bTxt.innerText = G.state === 'RING_LOCK' ? '放球!' : (G.ultActive ? '魔球!' : '投球');
+    sTxt.innerText = G.ultActive ? 'LIGHTNING' : 'PITCH';
+    const ultLbl = G.ultActive ? '⚡ 魔球待發!' : (G.energy >= 3 ? '⚡ 閃電魔球!' : `⚡ 氣力 (${G.energy}/3)`);
+    left.innerHTML = `<div class="pitch-grid">` + PITCH_TYPES.map((p, i) => `
+      <button class="opt-btn ${G.userPitchIdx === i && !G.ultActive ? 'active' : ''}" onclick="selectPitch(${i})">${p.name.split(' ')[0]}<br><span style="font-size:9px">${p.speed}km</span></button>
+    `).join('') + `</div>
+    <button class="${ultCls}" onclick="toggleUltimate()">${ultLbl}</button>
+    <button class="opt-btn" style="border-color:#4ade80;color:#4ade80;" onclick="issueIntentionalWalk()">🚶 故意四壞</button>`;
+    syncUserPitchTag();
+  }
+}
+
+let nextTimer = null;
+function showStatPill(txt) { const p = document.getElementById('stat-pill'); p.innerText = txt; p.classList.add('show'); }
+function callUmpire(text, color) { G.umpire = { text, color, timer: 68, armUp: text.includes('STRIKE') || text.includes('OUT') }; }
+function addPitchTrail(x, y, isStrike) {
+  G.pitchSeq++; G.pitchHistory.push({ num: G.pitchSeq, x, y, isStrike });
+  if (G.pitchHistory.length > 6) G.pitchHistory.shift();
+}
+function clearBatterPitchHistory() { G.pitchSeq = 0; G.pitchHistory = []; }
+
+function getBasePts(z) {
+  const homeY = z.cy + z.h * 0.55;
+  const wallDrop = z.isLand ? 34 : H * 0.10;
+  const foulRY = z.wallY + Math.pow(0.9, 2) * wallDrop;
+  const tB = 0.54;
+  const bxOff = (W * 0.45) * tB;
+  const by = homeY - (homeY - foulRY) * tB;
+  return [
+    { x: z.cx, y: homeY },
+    { x: z.cx + bxOff, y: by },
+    { x: z.cx,         y: z.isLand ? H * 0.355 : H * 0.385 },
+    { x: z.cx - bxOff, y: by },
+    { x: z.cx, y: homeY }
+  ];
+}
+
+function walkBatter(batterFaceIdx) {
+  const z = getZone(), basePts = getBasePts(z);
+  const runColor = (G.gameMode === 'DERBY' || G.isTop) ? '#2563eb' : '#ef4444';
+  const f0 = G.bases[0], f1 = G.bases[1], f2 = G.bases[2];
+  let runs = 0;
+  G.movingRunners = [];
+  G.movingRunners.push({ faceIdx: batterFaceIdx, color: runColor, path: [basePts[0], basePts[1]], prog: 0, speed: 0.055, targetBaseIdx: 0 });
+  if (f0 !== null) {
+    G.movingRunners.push({ faceIdx: f0, color: runColor, path: [basePts[1], basePts[2]], prog: 0, speed: 0.055, targetBaseIdx: 1 });
+    if (f1 !== null) {
+      G.movingRunners.push({ faceIdx: f1, color: runColor, path: [basePts[2], basePts[3]], prog: 0, speed: 0.055, targetBaseIdx: 2 });
+      if (f2 !== null) {
+        G.movingRunners.push({ faceIdx: f2, color: runColor, path: [basePts[3], basePts[4]], prog: 0, speed: 0.055, targetBaseIdx: 3 });
+        runs = 1;
+      }
+    }
+  }
+  if (f0 !== null && f1 !== null) G.bases[2] = f1;
+  if (f0 !== null) G.bases[1] = f0;
+  G.bases[0] = batterFaceIdx;
+  if (G.isTop) G.myScore += runs; else G.aiScore += runs;
+}
+
+function attemptSteal() {
+  ensureAudio(true);
+  if (G.screen !== 'PLAY' || G.gameMode !== 'MATCH' || !G.isTop || (G.state !== 'WAIT' && G.state !== 'PITCHING')) return;
+  const steal2B = G.bases[0] !== null && G.bases[1] === null;
+  const steal3B = !steal2B && (G.bases[1] !== null && G.bases[2] === null);
+  if (!steal2B && !steal3B) { showStatPill('⚠️ 前位壘包需為空才能盜壘！'); return; }
+  clearTimeout(nextTimer);
+  const z = getZone(), basePts = getBasePts(z);
+  const isSafe = Math.random() < (steal2B ? 0.76 : 0.68);
+  G.movingRunners = [{
+    faceIdx: steal2B ? G.bases[0] : G.bases[1], color: '#2563eb',
+    path: steal2B ? [basePts[1], basePts[2]] : [basePts[2], basePts[3]],
+    prog: 0, speed: 0.065, targetBaseIdx: isSafe ? (steal2B ? 1 : 2) : -1
+  }];
+  if (isSafe) {
+    playUmpireVoice('SAFE'); callUmpire('SAFE! 盜壘成功', '#4ade80');
+    if (steal2B) { G.bases[1] = G.bases[0]; G.bases[0] = null; } else { G.bases[2] = G.bases[1]; G.bases[1] = null; }
+    G.coins += 5; G.coinsEarnedThisGame += 5; addEnergy(1);
+    G.bannerText = '🏃‍♂️ 快腿盜壘成功 SAFE!'; G.bannerColor = '#4ade80';
+    scheduleNextPitch(900);
+  } else {
+    playUmpireVoice('OUT'); callUmpire('OUT! 盜壘阻殺', '#ef4444');
+    if (steal2B) G.bases[0] = null; else G.bases[1] = null;
+    G.bannerText = '🧤 捕手雷射肩阻殺 OUT!'; G.bannerColor = '#ef4444';
+    recordMatchOut();
+  }
+  updateHUD();
+}
+
+function issueIntentionalWalk() {
+  ensureAudio(true);
+  if (G.screen !== 'PLAY' || G.gameMode !== 'MATCH' || G.isTop || G.state === 'BATTED') return;
+  clearTimeout(nextTimer); playSfx('MITT_BALL');
+  callUmpire('INTENTIONAL WALK!', '#4ade80');
+  G.bannerText = '🚶 戰術敬遠：故意四壞保送！'; G.bannerColor = '#4ade80';
+  G.balls = 0; G.strikes = 0; clearBatterPitchHistory();
+  walkBatter(getCurrentBatterInfo().faceIdx); advanceBattingOrder();
+  updateHUD(); scheduleNextPitch(900);
+}
+
+function restartGame() {
+  document.getElementById('result-modal').classList.remove('show');
+  G.hrCount = 0; G.maxDist = 0; G.combo = 0; G.hitStreak = 0; G.derbyOutsLeft = 10;
+  G.inning = 1; G.isTop = true; G.myScore = 0; G.aiScore = 0; G.myHits = 0; G.mySO = 0; G.coinsEarnedThisGame = 0;
+  G.balls = 0; G.strikes = 0; G.outs = 0; G.batterOrderIdx = 0; G.aiBatterOrderIdx = 0;
+  G.bases = [null, null, null]; G.movingRunners = []; G.userPitchIdx = 0;
+  G.lastPitchIdx = null; G.samePitchCount = 0;
+  G.buntMode = false; G.ultActive = false; G.energy = G.gameMode === 'DERBY' ? 3 : 1; G.stateTicks = 0;
+  G.userSideOverride = undefined; G.perfectFX.timer = 0; G.mittSnap.timer = 0;
+  clearBatterPitchHistory();
+  G.powerMode = G.gameMode === 'DERBY';
+  G.bannerText = G.gameMode === 'DERBY' ? '🏆 大巨蛋全壘打大賽 PLAY BALL!' : '⚾ 1局上半：第1棒上場打擊！';
+  G.bannerColor = '#facc15';
+  scheduleNextPitch(500); updateHUD();
+}
+
+function resetFielders() {
+  G.movingRunners = [];
+  G.fielders.forEach((f, i) => { f.curX = FIELDERS_BASE[i].rx; f.curY = FIELDERS_BASE[i].ry; f.jump = 0; f.diveAngle = 0; f.actionText = ''; f.throwProg = 0; });
+}
+
+function forceNextPitch() {
+  if (G.screen !== 'PLAY') return;
+  clearTimeout(nextTimer); resetFielders();
+  const z = getZone(); G.aimX = z.cx; G.aimY = z.cy;
+  if (G.gameMode === 'DERBY' || G.isTop) startAIPitch();
+  else { G.state = 'WAIT'; syncUserPitchTag(); }
+  updateHUD();
+}
+
+function scheduleNextPitch(delay = 900) {
+  clearTimeout(nextTimer); G.state = 'WAIT'; G.stateTicks = 0;
+  nextTimer = setTimeout(() => {
+    if (G.screen !== 'PLAY') return;
+    resetFielders();
+    if (G.gameMode === 'DERBY' || G.isTop) startAIPitch();
+    else { G.state = 'WAIT'; syncUserPitchTag(); updateHUD(); }
+  }, delay);
+}
+
+function startAIPitch() {
+  const z = getZone();
+  let pIdx = G.gameMode === 'DERBY' ? 0 : Math.floor(Math.random() * PITCH_TYPES.length);
+  const pt = PITCH_TYPES[pIdx], pInfo = document.getElementById('pitch-info');
+  pInfo.innerText = `${pt.name} ${pt.speed} km/h`; pInfo.style.borderColor = pt.color; pInfo.style.color = pt.color;
+
+  let tx, ty;
+  if (G.gameMode === 'DERBY') {
+    tx = z.cx + (Math.random() - 0.5) * z.w * 0.48;
+    ty = z.cy + (Math.random() - 0.5) * z.h * 0.48;
+  } else if (Math.random() < 0.008) {
+    // 罕見內角失投觸身球 (0.8% 機率)
+    const bInfo = getCurrentBatterInfo();
+    tx = bInfo.isRightBox ? (z.cx + z.w * 0.5 + 26) : (z.cx - z.w * 0.5 - 26);
+    ty = z.cy + (Math.random() - 0.5) * 10;
+  } else {
+    // 依球數情境決定投出「引誘壞球」的機率：投手領先 45%、球數落後 18%、一般情境 35%
+    const ballProb = (G.strikes === 2 && G.balls < 2) ? 0.45 : (G.balls >= 2 ? 0.18 : 0.35);
+    if (Math.random() < ballProb) {
+      // 明確落在好球帶外圍 7~18px 的戰術引誘壞球區（絕不踏入打者觸身判定區）
+      const bInfo = getCurrentBatterInfo();
+      const side = Math.floor(Math.random() * 4);
+      const off = 7 + Math.random() * 11;
+      if (side === 0) {
+        tx = z.x - off; ty = z.cy + (Math.random() - 0.5) * z.h;
+        if (!bInfo.isRightBox) tx = Math.max(z.x - 13, tx);
+      } else if (side === 1) {
+        tx = z.x + z.w + off; ty = z.cy + (Math.random() - 0.5) * z.h;
+        if (bInfo.isRightBox) tx = Math.min(z.x + z.w + 13, tx);
+      } else if (side === 2) {
+        tx = z.cx + (Math.random() - 0.5) * (z.w + 10); ty = z.y - off;
+      } else {
+        tx = z.cx + (Math.random() - 0.5) * (z.w + 10); ty = z.y + z.h + off;
+      }
+    } else {
+      // 好球帶內落點（含邊角壓線好球）
+      tx = z.cx + (Math.random() - 0.5) * z.w * 0.88;
+      ty = z.cy + (Math.random() - 0.5) * z.h * 0.88;
+    }
+  }
+  const baseSpeed = G.gameMode === 'DERBY' ? 0.019 : pt.step;
+  G.pitch = {
+    startX: z.moundX, startY: z.moundY, targetX: tx, targetY: ty, x: z.moundX, y: z.moundY,
+    progress: 0, speed: G.ultActive ? baseSpeed * 0.58 : baseSpeed,
+    cx: G.gameMode === 'DERBY' ? 0 : pt.cx, cy: G.gameMode === 'DERBY' ? 0 : pt.cy,
+    typeIdx: pIdx, swung: false, isUltPitch: false, trail: []
+  };
+  G.state = 'PITCHING'; G.stateTicks = 0;
+}
+
+function onMainAction() {
+  ensureAudio(true);
+  if (G.screen !== 'PLAY') return;
+  if (G.gameMode === 'DERBY' || G.isTop) {
+    if (G.state === 'PITCHING' && !G.pitch.swung) executePlayerSwing();
+    else if (G.state === 'WAIT') forceNextPitch();
+  } else {
+    if (G.state === 'WAIT') { G.state = 'RING_LOCK'; G.ringScale = 2.0; G.ringDir = -1; updateHUD(); }
+    else if (G.state === 'RING_LOCK') launchUserPitch();
+  }
+}
+
+function launchUserPitch() {
+  const z = getZone(), pt = PITCH_TYPES[G.userPitchIdx];
+  const isUlt = G.ultActive && G.energy >= 3;
+  if (isUlt) { G.energy = 0; G.ultActive = false; playSfx('BAT_THUNDER'); }
+  const diff = isUlt ? 0 : Math.abs(G.ringScale - 1.0);
+  const err = diff < 0.25 ? 0 : (diff - 0.25) * 42;
+  const speedGapBonus = (G.lastPitchIdx !== null && Math.abs(PITCH_TYPES[G.lastPitchIdx].speed - pt.speed) >= 15) ? 0.16 : 0;
+  G.samePitchCount = (G.lastPitchIdx === G.userPitchIdx) ? (G.samePitchCount + 1) : 1;
+  G.lastPitchIdx = G.userPitchIdx;
+
+  G.pitch = {
+    startX: z.moundX, startY: z.moundY, targetX: G.aimX + (Math.random() - 0.5) * err, targetY: G.aimY + (Math.random() - 0.5) * err,
+    x: z.moundX, y: z.moundY, progress: 0, speed: isUlt ? 0.031 : pt.step,
+    cx: isUlt ? 82 : pt.cx, cy: isUlt ? -28 : pt.cy,
+    typeIdx: G.userPitchIdx, swung: false, isUltPitch: isUlt, accuracy: isUlt ? 1.0 : Math.max(0, 1 - diff),
+    speedGapBonus, overusedPenalty: G.samePitchCount >= 3 ? 0.20 : 0, trail: []
+  };
+  G.state = 'PITCHING'; G.stateTicks = 0; updateHUD();
+}
+
+function executePlayerSwing() {
+  const z = getZone(), p = G.pitch;
+  p.swung = true;
+  if (p.progress < 0.52) {
+    playSfx('WHIFF'); callUmpire('STRIKE! 揮棒過早', '#ef4444'); showStatPill('⚠️ 揮棒過早');
+    handleMissOrOut('揮棒過早落空！'); return;
+  }
+  if (G.buntMode && G.gameMode === 'MATCH') {
+    G.buntMode = false;
+    if (p.progress < 0.74 || Math.hypot(p.x - G.aimX, p.y - G.aimY) > 34) {
+      playSfx('WHIFF'); addPitchTrail(p.targetX, p.targetY, true); callUmpire('STRIKE! 觸擊落空', '#ef4444');
+      showStatPill('💨 短打觸擊落空 (BUNT MISS)'); handleMissOrOut('觸擊落空 STRIKE!'); return;
+    }
+    playSfx('BAT_WOOD'); addPitchTrail(p.targetX, p.targetY, getZoneDistances(p.targetX, p.targetY, z).isStrike);
+    const buntSpray = (Math.random() > 0.5 ? 1 : -1) * (0.22 + Math.random() * 0.25);
+    startBattedFlight(p.x, p.y, Math.round(75 + Math.random() * 45), 6, buntSpray, true); updateHUD(); return;
+  }
+
+  const curBat = BATS[G.batIdx], bInfo = getCurrentBatterInfo();
+  const isUltSwing = G.ultActive && G.energy >= 3;
+  if (isUltSwing) { G.aimX = p.x; G.aimY = p.y; }
+  else {
+    const { isStrike: inZ, outDist: outD } = getZoneDistances(p.targetX, p.targetY, z);
+    const snap = inZ ? (G.powerMode ? 0.24 : 0.40) : (outD < 14 ? 0.20 : 0.06);
+    G.aimX += (p.x - G.aimX) * snap; G.aimY += (p.y - G.aimY) * snap;
+  }
+
+  const dist = Math.hypot(p.x - G.aimX, p.y - G.aimY), hitRadius = isUltSwing ? 40 : (G.powerMode ? 16 : 22);
+  const timingDiff = Math.abs(p.progress - 0.90);
+  if (!isUltSwing && (dist > hitRadius * 1.15 || timingDiff > (G.powerMode ? 0.22 : 0.26))) {
+    playSfx('WHIFF'); addPitchTrail(p.targetX, p.targetY, true); callUmpire('STRIKE! 揮棒落空', '#ef4444');
+    handleMissOrOut('揮棒落空 STRIKE!'); return;
+  }
+  if (isUltSwing) { G.energy = 0; G.ultActive = false; }
+
+  const sweet = isUltSwing ? 1.15 : Math.pow(Math.max(0, 1 - dist / (hitRadius * 1.12)) * 0.62 + Math.max(0, 1 - timingDiff * 2.8) * 0.38, 1.32);
+  const isPerfect = isUltSwing || (sweet >= 0.74 && dist <= hitRadius * 0.55 && timingDiff <= 0.09);
+  const woodPerfectBonus = (curBat.id === 'WOOD' && isPerfect) ? 8 : 0;
+  const exitVelo = isUltSwing ? Math.round(118 + Math.random() * 10) : Math.round((72 + sweet * 32 + (isPerfect ? 6 : 0) + woodPerfectBonus + curBat.bonus * 0.45 + (bInfo.isOnFire ? 5 : 0)) * (G.powerMode ? 1.10 : 0.94));
+  let launchAngle = (isUltSwing || isPerfect) ? Math.round(25 + (Math.random() - 0.5) * 5) : Math.round(15 + ((G.aimY - p.y) / hitRadius) * 15 + (sweet > 0.7 ? 8 : 0) + (Math.random() - 0.5) * 7);
+  launchAngle = Math.max(5, Math.min(41, launchAngle));
+  const pullDir = bInfo.isRightBox ? -1 : 1;
+  let spray = isUltSwing ? (Math.random() - 0.5) * 0.52 : Math.max(-1.22, Math.min(1.22, (p.x - G.aimX) / 20 + (0.90 - p.progress) * 3.3 * pullDir + (Math.random() - 0.5) * 0.32));
+  const distFt = isUltSwing ? Math.round(445 + Math.random() * 55) : Math.round(exitVelo * 3.38 * (launchAngle < 15 ? 0.55 : 1.0));
+
+  playSfx(isPerfect ? 'PERFECT_HIT' : curBat.sfx);
+  addPitchTrail(p.targetX, p.targetY, getZoneDistances(p.targetX, p.targetY, z).isStrike);
+  if (isPerfect || (exitVelo >= 104 && sweet >= 0.70)) {
+    G.hitStopFrames = isPerfect ? 7 : 4; G.shakeFrames = isPerfect ? 14 : 9;
+    if (isPerfect) G.perfectFX = { timer: 46, x: p.x, y: p.y - 16, sub: `${exitVelo} MPH · 完美咬中球心` };
+  }
+  showStatPill(`${isUltSwing ? '🔥必殺' : (isPerfect ? '⚡PERFECT' : '')} ${exitVelo}mph · ${distFt}ft`);
+  startBattedFlight(p.x, p.y, distFt, launchAngle, spray, false); updateHUD();
+}
+
+function evaluateAIBatter() {
+  const z = getZone(), p = G.pitch, pt = PITCH_TYPES[p.typeIdx]; p.swung = true;
+  const bInfo = getCurrentBatterInfo(), trait = bInfo.trait || { chaseMod: 0, whiffMod: 0, powerMult: 1 };
+  const batX = bInfo.isRightBox ? (z.cx + z.w * 0.5 + 26) : (z.cx - z.w * 0.5 - 26);
+  const batY = z.cy + z.h * 0.55 - 14;
+  if (Math.abs(p.targetX - batX) < 11 && Math.abs(p.targetY - batY) < 20) { p.swung = false; return; }
+  if (p.isUltPitch && Math.random() < 0.92) {
+    playSfx('WHIFF'); addPitchTrail(p.targetX, p.targetY, true); callUmpire('STRIKE! 魔球揮空', '#facc15');
+    recordMatchStrike(); return;
+  }
+  const { isStrike, outDist } = getZoneDistances(p.targetX, p.targetY, z);
+  if (!isStrike) {
+    const chaseProb = Math.max(0.06, (pt.chaseBonus || 0.18) + trait.chaseMod - (outDist > 16 ? 0.24 : 0));
+    if (Math.random() > chaseProb) { p.swung = false; return; }
+  }
+  const edgeDist = Math.min(Math.abs(p.targetX - z.x), Math.abs(z.x + z.w - p.targetX), Math.abs(p.targetY - z.y), Math.abs(z.y + z.h - p.targetY));
+  const isCornerPaint = isStrike && edgeDist <= 5.5;
+  const highFastballBonus = (p.typeIdx === 0 && p.targetY < z.cy - z.h * 0.15) ? 0.14 : 0;
+  const whiffProb = Math.min(0.82, Math.max(0.12, 0.28 + (p.accuracy || 0.5) * 0.18 + (p.speedGapBonus || 0) + highFastballBonus + (isCornerPaint ? 0.10 : 0) + trait.whiffMod - (p.overusedPenalty || 0)));
+  if (Math.random() < whiffProb) {
+    playSfx('WHIFF'); addPitchTrail(p.targetX, p.targetY, isStrike);
+    callUmpire(isCornerPaint ? 'STRIKE! 壓線好球揮空' : (p.speedGapBonus > 0 ? 'STRIKE! 速差揮空' : 'STRIKE! 揮棒落空'), '#22c55e');
+    recordMatchStrike();
+  } else {
+    playSfx('BAT_WOOD'); addPitchTrail(p.targetX, p.targetY, isStrike);
+    const isLowChange = (p.typeIdx === 3 && p.targetY > z.cy);
+    const angle = isLowChange ? Math.round(5 + Math.random() * 8) : Math.round(9 + Math.random() * 23);
+    const meatballBoost = (Math.hypot(p.targetX - z.cx, p.targetY - z.cy) < 10 || p.overusedPenalty > 0) ? 1.18 : (isCornerPaint ? 0.84 : 0.94);
+    const distFt = Math.round((155 + Math.random() * 185) * trait.powerMult * meatballBoost * (angle < 13 ? 0.68 : 1.0));
+    startBattedFlight(p.x, p.y, distFt, angle, (Math.random() - 0.5) * 1.45, false);
+  }
+}
+
+function startBattedFlight(sx, sy, distFt, angle, spray, isBunt = false) {
+  const z = getZone(), isFoul = !isBunt && Math.abs(spray) > 1.0;
+  const fenceFt = Math.round(340 + (1 - Math.min(1, Math.abs(spray))) * 40), isHR = !isFoul && distFt >= fenceFt;
+  const normDist = Math.min(1.18, distFt / fenceFt);
+  const endY = z.cy - normDist * (z.cy - z.wallY + 25), endX = z.cx + spray * (W * 0.44) * normDist;
+
+  let activeIdx = -1, caught = false, fieldAction = 'ROUTINE', isDoublePlay = false;
+  if (!isHR && !isFoul) {
+    let minD = 9999;
+    G.fielders.forEach((f, idx) => {
+      const d = Math.hypot(endX - (z.cx + f.rx * W), endY - f.ry * H);
+      if (d < minD) { minD = d; activeIdx = idx; }
+    });
+    const isGround = angle < 12, isLine = angle >= 12 && angle <= 21, isPop = angle > 30, isInfield = activeIdx >= 3;
+    let catchProb = minD < W * 0.068 ? (isLine ? 0.48 : 0.78) : (minD < W * 0.125 ? (isLine ? 0.26 : 0.52) : (isLine ? 0.12 : 0.24));
+    if (isPop) catchProb = 0.85;
+    if (isBunt) { catchProb = 0.48; fieldAction = 'GROUND_THROW'; }
+    if (Math.random() < catchProb) caught = true;
+
+    if (!isBunt && caught) {
+      if (isGround && isInfield && activeIdx !== 6) {
+        fieldAction = 'GROUND_THROW';
+        if (G.gameMode === 'MATCH' && G.bases[0] !== null && G.outs < 2) {
+          isDoublePlay = true; fieldAction = 'DOUBLE_PLAY';
+        }
+      } else if (isLine && minD < W * 0.09) fieldAction = 'JUMP';
+      else if (minD < W * 0.065) fieldAction = 'ROUTINE';
+      else if (minD < W * 0.115) fieldAction = 'SLIDE';
+      else fieldAction = 'DIVE';
+    }
+  }
+
+  const basesEarned = isHR ? 4 : (distFt >= 305 ? 3 : (distFt >= 215 ? 2 : 1));
+  const bInfo = getCurrentBatterInfo(), runColor = (G.gameMode === 'DERBY' || G.isTop) ? '#2563eb' : '#ef4444';
+  const basePts = getBasePts(z);
+  G.movingRunners = [];
+  if (!isFoul) {
+    G.movingRunners.push({
+      faceIdx: bInfo.faceIdx, color: runColor, path: basePts.slice(0, caught ? 2 : basesEarned + 1),
+      prog: 0, speed: isHR ? 0.024 : 0.038, targetBaseIdx: caught ? -1 : Math.min(3, basesEarned - 1)
+    });
+    if (!caught && G.gameMode === 'MATCH') {
+      for (let i = 0; i < 3; i++) {
+        if (G.bases[i] !== null) {
+          const destIdx = Math.min(4, i + 1 + basesEarned);
+          G.movingRunners.push({
+            faceIdx: G.bases[i], color: runColor, path: basePts.slice(i + 1, destIdx + 1),
+            prog: 0, speed: 0.036, targetBaseIdx: destIdx >= 4 ? 3 : destIdx - 1
+          });
+        }
+      }
+    } else if (caught && !isBunt && G.gameMode === 'MATCH' && G.bases[2] !== null && G.outs < 2 && distFt >= 220) {
+      G.movingRunners.push({
+        faceIdx: G.bases[2], color: runColor, path: [basePts[3], basePts[4]],
+        prog: 0, speed: 0.042, targetBaseIdx: 3
+      });
+    }
+  }
+  G.hit = {
+    startX: sx, startY: sy, endX, endY, x: sx, y: sy, h: 0, peakH: Math.max(14, angle * 4.0),
+    progress: 0, speed: 0.018, isHR, isFoul, isCaught: caught, isBunt, isDoublePlay,
+    fieldAction, basesEarned, distFt, activeFielder: activeIdx, trail: []
+  };
+  spawnSparks(sx, sy, isHR ? '#facc15' : '#38bdf8', 16);
+  G.state = 'BATTED'; G.stateTicks = 0;
+}
+
+function advanceBattingOrder() {
+  if (G.gameMode === 'MATCH') {
+    if (G.isTop) { G.batterOrderIdx++; G.userSideOverride = undefined; }
+    else G.aiBatterOrderIdx++;
+  }
+}
+
+function resolveBattedBall() {
+  const h = G.hit, z = getZone();
+  resetFielders();
+  if (h.isFoul) {
+    G.bannerText = '⚠️ FOUL BALL 界外球！'; G.bannerColor = '#eab308'; callUmpire('FOUL BALL!', '#eab308');
+    if (G.gameMode === 'DERBY') { G.combo = 0; useDerbyOut(); }
+    else { if (G.strikes < 2) G.strikes++; scheduleNextPitch(900); }
+    updateHUD(); return;
+  }
+  if (h.isHR) {
+    const isMonster = h.distFt >= 405;
+    playSfx(isMonster ? 'CROWD_ROAR' : 'HOMERUN'); callUmpire('HOME RUN!!', '#facc15');
+    G.crowdCheerTimer = isMonster ? 130 : 95; addEnergy(1);
+    spawnSparks(h.endX, h.endY, '#facc15', 36);
+    let tBonus = 0;
+    G.targets.forEach(t => {
+      const tx = z.cx + t.rx * W;
+      if (Math.abs(h.endX - tx) < t.w * 0.65) { tBonus = t.bonus; t.hitTimer = 55; }
+    });
+    const reward = 25 + tBonus; G.coins += reward; G.coinsEarnedThisGame += reward;
+    if (h.distFt > G.careerMaxDist) G.careerMaxDist = h.distFt;
+    if (h.distFt > G.maxDist) G.maxDist = h.distFt;
+    saveData();
+    if (G.gameMode === 'DERBY') {
+      G.hrCount++; G.combo++;
+      G.bannerText = `🎆 HOME RUN! ${h.distFt}FT (+${reward}🪙)`; G.bannerColor = '#facc15';
+      scheduleNextPitch(1100);
+    } else {
+      const bInfo = getCurrentBatterInfo(), runs = 1 + G.bases.filter(b => b !== null).length;
+      if (G.isTop) { G.hrCount++; G.myHits++; G.combo++; G.hitStreak++; }
+      G.bases = [null, null, null];
+      if (G.isTop) G.myScore += runs; else G.aiScore += runs;
+      G.balls = 0; G.strikes = 0; clearBatterPitchHistory(); advanceBattingOrder();
+      G.bannerText = `🎆 ${bInfo.orderNum}棒轟出${runs}分砲 (${h.distFt}FT)`; G.bannerColor = '#facc15';
+      scheduleNextPitch(1150);
+    }
+    updateHUD(); return;
+  }
+
+  if (G.gameMode === 'DERBY') { G.combo = 0; useDerbyOut(); updateHUD(); return; }
+
+  if (h.isCaught) {
+    playUmpireVoice('OUT');
+    if (G.isTop) { G.combo = 0; G.hitStreak = 0; } else addEnergy(1);
+    if (h.isBunt && G.bases.some(b => b !== null) && G.outs < 2) {
+      let sacRuns = 0; const nextB = [null, null, null];
+      for (let i = 2; i >= 0; i--) { if (G.bases[i] !== null) { if (i + 1 >= 3) sacRuns++; else nextB[i + 1] = G.bases[i]; } }
+      G.bases = nextB; if (G.isTop) G.myScore += sacRuns; else G.aiScore += sacRuns;
+      callUmpire('SAC BUNT! 犧牲推進', '#38bdf8');
+      G.bannerText = '🎯 犧牲短打成功！護送跑者推進 (1 OUT)'; G.bannerColor = '#38bdf8';
+      G.balls = 0; G.strikes = 0; clearBatterPitchHistory(); advanceBattingOrder(); recordMatchOut(); updateHUD(); return;
+    }
+    if (!h.isBunt && G.bases[2] !== null && G.outs < 2 && h.distFt >= 220) {
+      G.bases[2] = null;
+      if (G.isTop) { G.myScore++; G.coins += 10; G.coinsEarnedThisGame += 10; saveData(); } else G.aiScore++;
+      callUmpire('SAC FLY! 高飛犧牲打', '#38bdf8');
+      G.bannerText = '🏃 高飛犧牲打 (SAC FLY)! 三壘跑者奔回得分 (1 OUT)'; G.bannerColor = '#38bdf8';
+      G.balls = 0; G.strikes = 0; clearBatterPitchHistory(); advanceBattingOrder(); recordMatchOut(); updateHUD(); return;
+    }
+    if (h.isDoublePlay) {
+      G.bases[0] = null;
+      callUmpire('DOUBLE PLAY!! 雙殺', '#facc15');
+      G.bannerText = '🔥🔥 6-4-3 精彩內野雙殺守備 (2 OUTS)!'; G.bannerColor = '#facc15';
+      G.balls = 0; G.strikes = 0; clearBatterPitchHistory(); advanceBattingOrder();
+      G.outs++; recordMatchOut(); updateHUD(); return;
+    }
+    const actMap = { DIVE: '🚀魚躍飛撲美技', SLIDE: '⚡貼地滑接美技', JUMP: '🦅躍起攔截美技', GROUND_THROW: '⚡內野快傳刺殺', ROUTINE: '🧤穩穩接殺' };
+    callUmpire('OUT! 守備刺殺', '#ef4444');
+    G.bannerText = `${actMap[h.fieldAction] || '🧤守備刺殺'} OUT!`; G.bannerColor = '#ef4444';
+    G.balls = 0; G.strikes = 0; clearBatterPitchHistory(); advanceBattingOrder(); recordMatchOut();
+  } else {
+    playUmpireVoice('SAFE');
+    const bInfo = getCurrentBatterInfo();
+    if (G.isTop) { G.myHits++; G.hitStreak++; G.coins += 8; G.coinsEarnedThisGame += 8; addEnergy(1); saveData(); }
+    callUmpire('SAFE! 安打上壘', '#4ade80');
+    advanceRunners(h.basesEarned, bInfo.faceIdx); advanceBattingOrder();
+    G.bannerText = `🔥 安打上壘 (${h.distFt}ft)`; G.bannerColor = '#4ade80';
+    G.balls = 0; G.strikes = 0; clearBatterPitchHistory(); scheduleNextPitch(1100);
+  }
+  updateHUD();
+}
+
+function advanceRunners(bases, batterFaceIdx) {
+  let runs = 0; const next = [null, null, null];
+  for (let i = 2; i >= 0; i--) { if (G.bases[i] !== null) { if (i + bases >= 3) runs++; else next[i + bases] = G.bases[i]; } }
+  if (bases >= 4) runs++; else next[bases - 1] = batterFaceIdx;
+  G.bases = next; if (G.isTop) G.myScore += runs; else G.aiScore += runs;
+}
+
+function handleMissOrOut(msg) {
+  G.bannerText = msg; G.bannerColor = '#ef4444';
+  if (G.gameMode === 'DERBY') { G.combo = 0; useDerbyOut(); } else recordMatchStrike();
+  updateHUD();
+}
+
+function useDerbyOut() {
+  G.derbyOutsLeft--;
+  if (G.derbyOutsLeft <= 0) setTimeout(() => showVictoryModal('DERBY'), 650);
+  else scheduleNextPitch(900);
+}
+
+function recordMatchStrike() {
+  G.strikes++;
+  if (G.strikes >= 3) {
+    playSfx('STRIKEOUT'); callUmpire('STRIKE 3! OUT!', '#ef4444');
+    G.balls = 0; G.strikes = 0; clearBatterPitchHistory();
+    if (G.isTop) { G.combo = 0; G.hitStreak = 0; }
+    else { G.mySO++; G.coins += 15; G.coinsEarnedThisGame += 15; addEnergy(1); saveData(); }
+    advanceBattingOrder(); recordMatchOut();
+  } else scheduleNextPitch(900);
+}
+
+function recordMatchOut() {
+  G.outs++;
+  if (G.outs >= 3) {
+    G.outs = 0; G.balls = 0; G.strikes = 0; G.bases = [null, null, null]; G.movingRunners = []; clearBatterPitchHistory();
+    document.getElementById('stat-pill').classList.remove('show');
+    if (G.isTop) {
+      if (G.inning >= 3 && G.aiScore > G.myScore) { setTimeout(() => showVictoryModal('MATCH'), 650); return; }
+      G.isTop = false; G.ultActive = false; G.bannerText = `🔄 ${G.inning}局下半：換你配球投球！`; G.bannerColor = '#38bdf8';
+      syncUserPitchTag(); scheduleNextPitch(1100);
+    } else {
+      if (G.inning >= 3 && G.myScore !== G.aiScore) { setTimeout(() => showVictoryModal('MATCH'), 650); return; }
+      G.inning++; G.isTop = true; G.ultActive = false; G.bannerText = `🔄 ${G.inning}局上半：輪到你打擊！`; G.bannerColor = '#facc15';
+      scheduleNextPitch(1100);
+    }
+  } else scheduleNextPitch(950);
+}
+
+function showVictoryModal(mode) {
+  playSfx('HOMERUN');
+  const vCv = document.getElementById('vic-cv'), vc = vCv.getContext('2d');
+  vCv.width = Math.round(60 * DPR); vCv.height = Math.round(60 * DPR);
+  vc.setTransform(DPR, 0, 0, DPR, 0, 0); vc.clearRect(0, 0, 60, 60);
+  drawChibi(vc, 30, 42, 1.05, '#2563eb', 'BATTER', 0, 0, G.playerFaceIdx, 0, true);
+  if (mode === 'DERBY') {
+    const rank = G.hrCount >= 8 ? 'S' : (G.hrCount >= 4 ? 'A' : 'B');
+    document.getElementById('m-title').innerText = '🏆 全壘打大賽結算';
+    document.getElementById('m-score').innerText = `${G.hrCount} 轟`;
+    document.getElementById('m-rank').innerText = rank;
+    document.getElementById('m-grid').innerHTML = `<div class="vic-stat"><span>📏 本場最遠</span><b>${G.maxDist} ft</b></div>
+      <div class="vic-stat"><span>🏅 生涯最遠</span><b>${G.careerMaxDist} ft</b></div>
+      <div class="vic-stat"><span>🪙 本場賞金</span><b>+${G.coinsEarnedThisGame}</b></div>
+      <div class="vic-stat"><span>💰 總持金幣</span><b>${G.coins} 🪙</b></div>`;
+  } else {
+    const win = G.myScore >= G.aiScore;
+    document.getElementById('m-title').innerText = win ? '🏆 稱霸台北大巨蛋！' : '⚾ 王牌對決結束';
+    document.getElementById('m-score').innerText = `${G.myScore} : ${G.aiScore}`;
+    document.getElementById('m-rank').innerText = win ? 'S' : 'B';
+    document.getElementById('m-grid').innerHTML = `<div class="vic-stat"><span>🔥 團隊安打</span><b>${G.myHits} 支</b></div>
+      <div class="vic-stat"><span>🎆 全壘打數</span><b>${G.hrCount} 轟</b></div>
+      <div class="vic-stat"><span>⚾ 奪三振數</span><b>${G.mySO} K</b></div>
+      <div class="vic-stat"><span>🪙 獲得賞金</span><b>+${G.coinsEarnedThisGame}</b></div>`;
+  }
+  document.getElementById('result-modal').classList.add('show');
+}
+
+function spawnSparks(x, y, color, count) {
+  for (let i = 0; i < count; i++) {
+    const a = Math.random() * Math.PI * 2, s = 1.8 + Math.random() * 5.0;
+    G.particles.push({ x, y, vx: Math.cos(a) * s, vy: Math.sin(a) * s - 1.5, color, life: Math.floor(16 + Math.random() * 14) });
+  }
+}
+
+function drawTitleScreen() {
+  const sky = SKIES[G.skyIdx], isLand = W > H;
+  const g = ctx.createLinearGradient(0, 0, 0, H * 0.55);
+  g.addColorStop(0, sky.top); g.addColorStop(1, sky.bot);
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+  // 1. 大巨蛋圓弧穹頂鋼架與 5 道黃金探照燈光束
+  ctx.strokeStyle = 'rgba(148,163,184,0.22)'; ctx.lineWidth = 2;
+  for (let i = 1; i <= 3; i++) {
+    ctx.beginPath(); ctx.arc(W * 0.5, H * 0.42, W * (0.28 + i * 0.16), Math.PI * 1.08, Math.PI * 1.92); ctx.stroke();
+  }
+  for (let i = 0; i < 5; i++) {
+    const lx = W * (0.16 + i * 0.17);
+    const beam = ctx.createLinearGradient(lx, 0, lx, H * 0.44);
+    beam.addColorStop(0, 'rgba(254,240,138,0.28)'); beam.addColorStop(1, 'rgba(254,240,138,0)');
+    ctx.fillStyle = beam;
+    ctx.beginPath(); ctx.moveTo(lx - 10, 0); ctx.lineTo(lx + 10, 0); ctx.lineTo(lx + 38, H * 0.44); ctx.lineTo(lx - 38, H * 0.44); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#fde047'; ctx.fillRect(lx - 11, 2, 22, 4);
+  }
+
+  // 2. 遠景看台歡呼光點與條紋草皮
+  ctx.fillStyle = '#0f172a'; ctx.fillRect(0, H * 0.40, W, H * 0.04);
+  const sCols = ['#facc15', '#38bdf8', '#f43f5e', '#4ade80'];
+  for (let i = 1; i < 24; i++) {
+    ctx.fillStyle = sCols[i % 4];
+    safeCircle(ctx, (W / 24) * i, H * 0.418 + Math.sin(G.animTick * 0.15 + i) * 2, 2.2); ctx.fill();
+  }
+  for (let i = 0; i < 4; i++) {
+    ctx.fillStyle = i % 2 === 0 ? sky.grass1 : sky.grass2;
+    ctx.fillRect(0, H * 0.43 + i * (H * 0.04), W, H * 0.042);
+  }
+  const dirtG = ctx.createLinearGradient(0, H * 0.58, 0, H);
+  dirtG.addColorStop(0, '#b45309'); dirtG.addColorStop(1, '#7c2d12');
+  ctx.fillStyle = dirtG; ctx.fillRect(0, H * 0.58, W, H * 0.42);
+
+  // 3. 雙王牌對峙氣場 (左藍金覺醒 vs 右赤紅烈焰)
+  const bob = Math.sin(G.animTick * 0.06) * 4, pScale = isLand ? 1.45 : 1.82, charY = isLand ? H * 0.44 : H * 0.41;
+  const pAura = ctx.createRadialGradient(W * 0.77, charY - bob - 18, 6, W * 0.77, charY - bob - 18, 62);
+  pAura.addColorStop(0, 'rgba(248,113,113,0.75)'); pAura.addColorStop(0.5, 'rgba(220,38,38,0.35)'); pAura.addColorStop(1, 'rgba(220,38,38,0)');
+  ctx.fillStyle = pAura; safeCircle(ctx, W * 0.77, charY - bob - 18, 62); ctx.fill();
+
+  drawChibi(ctx, W * 0.23, charY + bob, pScale, '#2563eb', 'BATTER', 0, 0, G.playerFaceIdx, 0, true);
+  drawChibi(ctx, W * 0.77, charY - bob, pScale, '#ef4444', 'PITCHER', 0, 0, 6, 0, false);
+
+  // 4. 中央破框「烈焰燃燒棒球 ＋ 雙紅縫線 ＋ 閃電交鋒」
+  const ballY = (isLand ? H * 0.38 : H * 0.35) + Math.sin(G.animTick * 0.08) * 5;
+  ctx.strokeStyle = 'rgba(250,204,21,0.75)'; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(W * 0.34, ballY - 12); ctx.lineTo(W * 0.46, ballY + 4); ctx.lineTo(W * 0.43, ballY - 6); ctx.lineTo(W * 0.66, ballY + 12); ctx.stroke();
+
+  const fireG = ctx.createRadialGradient(W * 0.5, ballY, 8, W * 0.5, ballY, 48 + Math.sin(G.animTick * 0.2) * 5);
+  fireG.addColorStop(0, '#fef08a'); fireG.addColorStop(0.45, 'rgba(249,115,22,0.85)'); fireG.addColorStop(1, 'rgba(239,68,68,0)');
+  ctx.fillStyle = fireG; safeCircle(ctx, W * 0.5, ballY, 52); ctx.fill();
+
+  ctx.fillStyle = '#ffffff'; ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 2.8;
+  safeCircle(ctx, W * 0.5, ballY, 21); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.8;
+  ctx.beginPath(); ctx.arc(W * 0.5 - 13, ballY, 14, -0.7, 0.7); ctx.stroke();
+  ctx.beginPath(); ctx.arc(W * 0.5 + 13, ballY, 14, Math.PI - 0.7, Math.PI + 0.7); ctx.stroke();
+
+  // 5. 主標題黃金徽章 (v5.6.8)
+  const titleY = isLand ? H * 0.18 : H * 0.185, boxW = Math.min(346, W * 0.90), boxH = isLand ? 54 : 68;
+  ctx.fillStyle = 'rgba(15,23,42,0.92)'; ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3;
+  ctx.fillRect(W * 0.5 - boxW / 2, titleY - boxH / 2, boxW, boxH);
+  ctx.strokeRect(W * 0.5 - boxW / 2, titleY - boxH / 2, boxW, boxH);
+  ctx.font = `900 ${isLand ? 18 : 20}px sans-serif`; ctx.textAlign = 'center'; ctx.fillStyle = '#facc15';
+  ctx.fillText('⚡ 爆 裂 野 球 魂 v5.6.8 ⚡', W * 0.5, titleY - 3);
+  ctx.font = `900 ${isLand ? 10 : 12}px sans-serif`; ctx.fillStyle = '#38bdf8';
+  ctx.fillText('大 巨 蛋 王 牌 對 決 · TAIPEI DOME', W * 0.5, titleY + (isLand ? 14 : 18));
+}
+
+function loop() {
+  requestAnimationFrame(loop);
+  G.animTick++;
+  if (G.crowdCheerTimer > 0) G.crowdCheerTimer--;
+  if (G.perfectFX.timer > 0) G.perfectFX.timer--;
+  if (G.mittSnap.timer > 0) G.mittSnap.timer--;
+  if (G.umpire.timer > 0) G.umpire.timer--;
+
+  if (G.screen === 'PLAY') {
+    const mOpen = document.getElementById('face-modal').classList.contains('show') || document.getElementById('result-modal').classList.contains('show');
+    if (!mOpen && (G.state === 'PITCHING' || G.state === 'BATTED')) {
+      if (++G.stateTicks > 340) { G.stateTicks = 0; scheduleNextPitch(200); }
+    } else if (!mOpen && G.state === 'WAIT' && (G.gameMode === 'DERBY' || G.isTop)) {
+      if (++G.stateTicks > 150) { G.stateTicks = 0; startAIPitch(); }
+    } else G.stateTicks = 0;
+  }
+
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (G.screen === 'TITLE') { ctx.clearRect(0, 0, W, H); drawTitleScreen(); return; }
+  if (G.hitStopFrames > 0) { G.hitStopFrames--; return; }
+
+  const z = getZone(), sky = SKIES[G.skyIdx], sMult = z.isLand ? 0.82 : 1.0;
+
+  if (G.state === 'RING_LOCK') {
+    G.ringScale += G.ringDir * 0.033;
+    if (G.ringScale <= 0.65) G.ringDir = 1;
+    if (G.ringScale >= 2.1) G.ringDir = -1;
+  }
+
+  if (G.state === 'PITCHING') {
+    const p = G.pitch; p.progress += p.speed;
+    const curve = Math.pow(p.progress, 1.15) * Math.sin(p.progress * Math.PI);
+    p.x = p.startX + (p.targetX - p.startX) * p.progress + p.cx * curve;
+    p.y = p.startY + (p.targetY - p.startY) * p.progress + p.cy * curve;
+    p.trail.push({ x: p.x, y: p.y }); if (p.trail.length > 14) p.trail.shift();
+
+    if ((G.gameMode === 'DERBY' || G.isTop) && !p.swung && p.progress > 0.12 && !isDraggingAim) {
+      const { isStrike: inZ, outDist: outD } = getZoneDistances(p.targetX, p.targetY, z);
+      const track = (G.ultActive && G.energy >= 3) ? 0.45 : (inZ ? (G.powerMode ? 0.14 : 0.20) : (outD < 12 ? 0.07 : 0.015));
+      G.aimX += (p.x * 0.65 + p.targetX * 0.35 - G.aimX) * track;
+      G.aimY += (p.y * 0.65 + p.targetY * 0.35 - G.aimY) * track;
+    }
+
+    if (G.gameMode === 'MATCH' && !G.isTop && p.progress >= 0.88 && !p.swung) evaluateAIBatter();
+
+    if (p.progress >= 0.94 && G.state === 'PITCHING') {
+      const bInfo = getCurrentBatterInfo();
+      const batX = bInfo.isRightBox ? (z.cx + z.w * 0.5 + 26) : (z.cx - z.w * 0.5 - 26);
+      const batY = z.cy + z.h * 0.55 - 14;
+      if (G.gameMode === 'MATCH' && !p.swung && Math.abs(p.targetX - batX) < 11 && Math.abs(p.targetY - batY) < 20) {
+        playSfx('HBP'); spawnSparks(p.x, p.y, '#ef4444', 22);
+        callUmpire('HIT BY PITCH! 觸身保送', '#f87171');
+        G.bannerText = '💥 觸身球保送上壘 (HIT BY PITCH)!'; G.bannerColor = '#f87171';
+        showStatPill('💥 觸身球保送！強迫推進壘包');
+        G.balls = 0; G.strikes = 0; clearBatterPitchHistory();
+        walkBatter(bInfo.faceIdx); advanceBattingOrder();
+        scheduleNextPitch(1000); updateHUD();
+        return;
+      }
+      const { isStrike } = getZoneDistances(p.targetX, p.targetY, z);
+      addPitchTrail(p.targetX, p.targetY, isStrike);
+      G.mittSnap = { timer: 28, x: p.targetX, y: p.targetY, isStrike };
+      if (G.gameMode === 'DERBY') { playSfx('MITT_BALL'); scheduleNextPitch(600); }
+      else if (isStrike) { playSfx('MITT_STRIKE'); callUmpire('STRIKE!', '#eab308'); recordMatchStrike(); }
+      else {
+        playSfx('MITT_BALL'); G.balls++;
+        if (G.balls >= 4) {
+          callUmpire('BALL FOUR!', '#4ade80'); G.balls = 0; G.strikes = 0; clearBatterPitchHistory();
+          walkBatter(bInfo.faceIdx); advanceBattingOrder();
+        } else callUmpire('BALL!', '#38bdf8');
+        scheduleNextPitch(800);
+      }
+      updateHUD();
+    }
+  }
+
+  if (G.state === 'BATTED') {
+    const h = G.hit; h.progress += h.speed;
+    const fP = Math.min(1, h.progress / 0.62);
+    h.x = h.startX + (h.endX - h.startX) * fP;
+    h.y = h.startY + (h.endY - h.startY) * fP;
+    h.h = Math.max(0, Math.sin(fP * Math.PI) * h.peakH);
+    h.trail.push({ x: h.x, y: h.y - h.h }); if (h.trail.length > 16) h.trail.shift();
+
+    if (h.activeFielder >= 0 && !h.isHR && !h.isFoul) {
+      const f = G.fielders[h.activeFielder];
+      const moveP = Math.min(1, h.progress / 0.58);
+      f.curX = FIELDERS_BASE[h.activeFielder].rx + ((h.endX - z.cx) / W - FIELDERS_BASE[h.activeFielder].rx) * moveP;
+      f.curY = FIELDERS_BASE[h.activeFielder].ry + (h.endY / H - FIELDERS_BASE[h.activeFielder].ry) * moveP;
+
+      if (h.isCaught) {
+        if (h.fieldAction === 'JUMP' && h.progress > 0.35 && h.progress < 0.72) {
+          f.jump = Math.sin(((h.progress - 0.35) / 0.37) * Math.PI) * 24;
+          f.actionText = '🦅躍起攔截!'; f.actionColor = '#38bdf8';
+        } else if (h.fieldAction === 'DIVE' && h.progress > 0.38) {
+          f.diveAngle = (h.endX >= z.cx + FIELDERS_BASE[h.activeFielder].rx * W ? 1 : -1) * 1.15;
+          f.jump = h.progress < 0.62 ? Math.sin(((h.progress - 0.38) / 0.24) * Math.PI) * 14 : 0;
+          f.actionText = '🚀魚躍美技!'; f.actionColor = '#facc15';
+          if (Math.floor(h.progress * 100) === 60) spawnSparks(z.cx + f.curX * W, f.curY * H + 8, '#d97706', 8);
+        } else if (h.fieldAction === 'SLIDE' && h.progress > 0.40) {
+          f.diveAngle = -0.55; f.actionText = '⚡滑接攔截!'; f.actionColor = '#4ade80';
+          if (Math.floor(h.progress * 100) === 58) spawnSparks(z.cx + f.curX * W, f.curY * H + 8, '#b45309', 8);
+        } else if (h.fieldAction === 'GROUND_THROW' || h.fieldAction === 'DOUBLE_PLAY') {
+          if (h.progress >= 0.58 && h.progress < 0.66) {
+            f.actionText = '🧤攔截!'; f.actionColor = '#38bdf8';
+          } else if (h.progress >= 0.66) {
+            f.throwProg = Math.min(1, (h.progress - 0.66) / 0.30);
+            f.actionText = h.fieldAction === 'DOUBLE_PLAY' ? '🔥🔥雙殺快傳!' : '⚡快傳刺殺!';
+            f.actionColor = '#facc15';
+          }
+        } else if (h.progress > 0.52) {
+          f.actionText = '🧤穩穩接殺!'; f.actionColor = '#e2e8f0';
+        }
+      }
+    }
+    if (h.progress >= 1.0) resolveBattedBall();
+  }
+
+  for (let i = G.movingRunners.length - 1; i >= 0; i--) {
+    const r = G.movingRunners[i];
+    r.prog = Math.min(1, r.prog + r.speed);
+    if (r.prog >= 1 && r.targetBaseIdx === 3) {
+      const homePt = r.path[r.path.length - 1];
+      spawnSparks(homePt.x, homePt.y, '#facc15', 14);
+      G.movingRunners.splice(i, 1);
+    }
+  }
+
+  ctx.clearRect(0, 0, W, H);
+  ctx.save();
+  if (G.shakeFrames > 0) { G.shakeFrames--; ctx.translate((Math.random() - 0.5) * 8, (Math.random() - 0.5) * 8); }
+
+  const wallDrop = z.isLand ? 34 : H * 0.10;
+  const getWallY = (x) => z.wallY + Math.pow((x - z.cx) / (W * 0.5), 2) * wallDrop;
+  const skyG = ctx.createLinearGradient(0, 0, 0, z.wallY + wallDrop);
+  skyG.addColorStop(0, sky.top); skyG.addColorStop(1, sky.bot);
+  ctx.fillStyle = skyG; ctx.fillRect(0, 0, W, z.wallY + wallDrop + 12);
+
+  if (sky.dome) {
+    ctx.strokeStyle = 'rgba(148,163,184,0.16)'; ctx.lineWidth = 2;
+    for (let i = 1; i <= 3; i++) {
+      ctx.beginPath(); ctx.arc(z.cx, z.wallY + 90, W * (0.28 + i * 0.16), Math.PI * 1.1, Math.PI * 1.9); ctx.stroke();
+    }
+    for (let i = 0; i < 5; i++) {
+      const lx = W * (0.18 + i * 0.16), beamBot = getWallY(lx) - 16;
+      const beam = ctx.createLinearGradient(lx, 8, lx, beamBot);
+      beam.addColorStop(0, 'rgba(254,240,138,0.22)'); beam.addColorStop(1, 'rgba(254,240,138,0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath(); ctx.moveTo(lx - 8, 8); ctx.lineTo(lx + 8, 8); ctx.lineTo(lx + 28, beamBot); ctx.lineTo(lx - 28, beamBot); ctx.closePath(); ctx.fill();
+      ctx.fillStyle = '#fde047'; ctx.fillRect(lx - 9, 4, 18, 4);
+    }
+  }
+
+  ctx.save();
+  ctx.beginPath();
+  ctx.moveTo(0, getWallY(0) - 2);
+  ctx.quadraticCurveTo(z.cx, z.wallY - wallDrop - 2, W, getWallY(W) - 2);
+  ctx.lineTo(W, H); ctx.lineTo(0, H); ctx.closePath(); ctx.clip();
+  for (let i = 0; i < 8; i++) {
+    ctx.fillStyle = i % 2 === 0 ? sky.grass1 : sky.grass2;
+    ctx.fillRect(0, z.wallY - 10 + i * ((H - z.wallY + 20) / 8), W, (H - z.wallY + 20) / 8 + 1);
+  }
+  ctx.restore();
+
+  const standColors = ['#facc15', '#38bdf8', '#f43f5e', '#4ade80', '#e2e8f0'];
+
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.moveTo(0, getWallY(0) - 36);
+  ctx.quadraticCurveTo(z.cx, z.wallY - wallDrop - 36, W, getWallY(W) - 36);
+  ctx.lineTo(W, getWallY(W) - 16);
+  ctx.quadraticCurveTo(z.cx, z.wallY - wallDrop - 16, 0, getWallY(0) - 16);
+  ctx.closePath(); ctx.fill();
+  for (let i = 1; i < 24; i++) {
+    const sx = (W / 24) * i, sy = getWallY(sx) - 22;
+    const jump = G.crowdCheerTimer > 0 ? Math.abs(Math.sin(G.animTick * 0.28 + i)) * 4 : 0;
+    ctx.fillStyle = standColors[i % standColors.length]; safeCircle(ctx, sx, sy - jump, 2.2); ctx.fill();
+    ctx.fillStyle = standColors[(i + 2) % standColors.length]; safeCircle(ctx, sx + 4, sy - 7 - jump, 2.0); ctx.fill();
+  }
+
+  ctx.fillStyle = '#064e3b'; ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(0, getWallY(0) - 18);
+  ctx.quadraticCurveTo(z.cx, z.wallY - wallDrop - 18, W, getWallY(W) - 18);
+  ctx.lineTo(W, getWallY(W));
+  ctx.quadraticCurveTo(z.cx, z.wallY - wallDrop, 0, getWallY(0));
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  G.targets.forEach(t => {
+    const tx = z.cx + t.rx * W, ty = getWallY(tx) - 22;
+    if (t.hitTimer > 0) t.hitTimer--;
+    ctx.fillStyle = t.hitTimer > 0 ? '#facc15' : '#0f172a';
+    ctx.strokeStyle = t.color; ctx.lineWidth = 1.8;
+    ctx.fillRect(tx - t.w / 2, ty, t.w, 16); ctx.strokeRect(tx - t.w / 2, ty, t.w, 16);
+    ctx.fillStyle = t.hitTimer > 0 ? '#0f172a' : t.color;
+    ctx.font = '900 9px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(t.label, tx, ty + 11.5);
+  });
+
+  const standH = z.isLand ? H * 0.34 : H * 0.32, standW = W * 0.085;
+  [0, 1].forEach(side => {
+    const sx = side === 0 ? 0 : W, dir = side === 0 ? 1 : -1, wy = getWallY(sx);
+    ctx.fillStyle = '#0f172a'; ctx.strokeStyle = '#eab308'; ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(sx, wy); ctx.lineTo(sx + dir * standW, wy + 12);
+    ctx.lineTo(sx + dir * standW * 0.35, wy + standH); ctx.lineTo(sx, wy + standH);
+    ctx.closePath(); ctx.fill(); ctx.stroke();
+    for (let r = 0; r < 7; r++) {
+      const ry = wy + 18 + r * (standH / 7.8), maxX = standW * (1 - r * 0.09);
+      for (let c = 0; c < 3; c++) {
+        const cxPt = sx + dir * (6 + c * (maxX / 3.2));
+        const jump = G.crowdCheerTimer > 0 ? Math.abs(Math.sin(G.animTick * 0.25 + r + c)) * 4 : 0;
+        ctx.fillStyle = standColors[(r + c) % standColors.length];
+        safeCircle(ctx, cxPt, ry - jump, 2.3); ctx.fill();
+      }
+    }
+  });
+  [W * 0.05, W * 0.95].forEach((px, idx) => {
+    const py = getWallY(px), topY = Math.max(8, py - (z.isLand ? 78 : 96));
+    ctx.fillStyle = 'rgba(250,204,21,0.22)';
+    ctx.fillRect(idx === 0 ? px : px - 6, topY + 4, 6, py - topY - 8);
+    ctx.strokeStyle = '#facc15'; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px, topY); ctx.stroke();
+    ctx.fillStyle = '#fef08a'; safeCircle(ctx, px, topY, 3.2); ctx.fill();
+  });
+
+  const basePts = getBasePts(z);
+  const homeY = basePts[0].y, b1 = basePts[1], b2 = basePts[2], b3 = basePts[3];
+
+  ctx.fillStyle = '#b45309';
+  const dirtRx = Math.abs(b1.x - z.cx) * 1.18;
+  const dirtRy = Math.max(28, (b1.y - b2.y) + (z.isLand ? 20 : 26));
+  ctx.beginPath();
+  ctx.ellipse(z.cx, b1.y + 6, dirtRx, dirtRy, 0, Math.PI * 1.03, Math.PI * 1.97);
+  ctx.lineTo(z.cx, homeY + 16); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(z.cx, homeY + 8, z.w * 1.5, z.h * 0.85, 0, 0, Math.PI * 2); ctx.fill();
+
+  ctx.fillStyle = sky.grass1;
+  ctx.beginPath(); ctx.moveTo(z.cx, homeY - 12); ctx.lineTo(b1.x - 14, b1.y); ctx.lineTo(b2.x, b2.y + 12); ctx.lineTo(b3.x + 14, b3.y); ctx.closePath(); ctx.fill();
+
+  ctx.fillStyle = '#b45309'; ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.ellipse(z.moundX, z.moundY, 18 * sMult, 11 * sMult, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = '#f8fafc'; ctx.fillRect(z.moundX - 6, z.moundY - 2, 12, 3.5);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.88)'; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(z.cx, homeY); ctx.lineTo(W * 0.05, getWallY(W * 0.05));
+  ctx.moveTo(z.cx, homeY); ctx.lineTo(W * 0.95, getWallY(W * 0.95));
+  ctx.moveTo(b1.x, b1.y); ctx.lineTo(b2.x, b2.y); ctx.lineTo(b3.x, b3.y); ctx.stroke();
+
+  drawChibi(ctx, b1.x + 18 * sMult, b1.y - 6, 0.38 * sMult, '#1e293b', 'BASE_UMP');
+  drawChibi(ctx, b3.x - 18 * sMult, b3.y - 6, 0.38 * sMult, '#1e293b', 'BASE_UMP');
+
+  [b1, b2, b3].forEach((b, i) => {
+    ctx.fillStyle = G.bases[i] !== null ? '#facc15' : '#fff';
+    ctx.beginPath(); ctx.moveTo(b.x, b.y - 6); ctx.lineTo(b.x + 11, b.y); ctx.lineTo(b.x, b.y + 6); ctx.lineTo(b.x - 11, b.y); ctx.closePath(); ctx.fill();
+    if (G.gameMode === 'MATCH' && G.movingRunners.length === 0 && G.bases[i] !== null) {
+      drawChibi(ctx, b.x, b.y - 10, 0.45 * sMult, G.isTop ? '#2563eb' : '#ef4444', 'RUNNER', 0, 0, G.bases[i]);
+    }
+  });
+
+  G.movingRunners.forEach(r => {
+    if (!r.path || r.path.length < 2) return;
+    const totalSeg = r.path.length - 1, segF = r.prog * totalSeg, idx = Math.min(totalSeg - 1, Math.floor(segF)), t = segF - idx;
+    const rx = r.path[idx].x + (r.path[idx + 1].x - r.path[idx].x) * t;
+    const ry = r.path[idx].y + (r.path[idx + 1].y - r.path[idx].y) * t;
+    drawChibi(ctx, rx, ry - 10, 0.46 * sMult, r.color, 'RUNNER', 0, Math.abs(Math.sin(G.animTick * 0.35)) * 5, r.faceIdx);
+  });
+
+  const defColor = (G.gameMode === 'DERBY' || G.isTop) ? '#ef4444' : '#2563eb';
+  G.fielders.forEach(f => {
+    const fx = z.cx + f.curX * W, fy = f.curY * H;
+    drawChibi(ctx, fx, fy, 0.44 * sMult, defColor, 'FIELDER', 0, f.jump, f.faceIdx, f.diveAngle);
+    if (f.actionText) {
+      ctx.fillStyle = 'rgba(15,23,42,0.88)'; ctx.fillRect(fx - 34, fy - 34 - f.jump, 68, 14);
+      ctx.fillStyle = f.actionColor; ctx.font = '900 9px sans-serif'; ctx.textAlign = 'center';
+      ctx.fillText(f.actionText, fx, fy - 24 - f.jump);
+    }
+    if (f.throwProg > 0) {
+      if (G.hit && G.hit.isDoublePlay) {
+        if (f.throwProg < 0.5) {
+          const p1 = f.throwProg * 2, tx = fx + (b2.x - fx) * p1, ty = fy + (b2.y - fy) * p1;
+          ctx.strokeStyle = '#38bdf8'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
+          ctx.fillStyle = '#fff'; safeCircle(ctx, tx, ty, 3.6); ctx.fill();
+        } else {
+          const p2 = (f.throwProg - 0.5) * 2, tx = b2.x + (b1.x - b2.x) * p2, ty = b2.y + (b1.y - b2.y) * p2;
+          ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2.8; ctx.beginPath(); ctx.moveTo(b2.x, b2.y); ctx.lineTo(tx, ty); ctx.stroke();
+          ctx.fillStyle = '#fef08a'; safeCircle(ctx, tx, ty, 3.8); ctx.fill();
+        }
+      } else {
+        const tx = fx + (b1.x - fx) * f.throwProg, ty = fy + (b1.y - fy) * f.throwProg;
+        ctx.strokeStyle = '#facc15'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(tx, ty); ctx.stroke();
+        ctx.fillStyle = '#fff'; safeCircle(ctx, tx, ty, 3.6); ctx.fill();
+      }
+    }
+  });
+
+  drawChibi(ctx, z.moundX, z.moundY - 6, 0.56 * sMult, defColor, 'PITCHER', 0, 0, (G.gameMode === 'DERBY' || G.isTop) ? 6 : G.playerFaceIdx);
+
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(z.cx - 10, homeY - 4); ctx.lineTo(z.cx + 10, homeY - 4);
+  ctx.lineTo(z.cx + 10, homeY + 3); ctx.lineTo(z.cx, homeY + 9); ctx.lineTo(z.cx - 10, homeY + 3);
+  ctx.closePath(); ctx.fill(); ctx.stroke();
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.75)'; ctx.lineWidth = 1.5;
+  ctx.strokeRect(z.cx - z.w * 0.5 - 38, homeY - 24, 24, 32);
+  ctx.strokeRect(z.cx + z.w * 0.5 + 14, homeY - 24, 24, 32);
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.72)'; ctx.lineWidth = 1.8;
+  ctx.strokeRect(z.x, z.y, z.w, z.h);
+  ctx.strokeStyle = 'rgba(255,255,255,0.25)'; ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(z.x + z.w / 3, z.y); ctx.lineTo(z.x + z.w / 3, z.y + z.h);
+  ctx.moveTo(z.x + (z.w * 2) / 3, z.y); ctx.lineTo(z.x + (z.w * 2) / 3, z.y + z.h);
+  ctx.moveTo(z.x, z.y + z.h / 3); ctx.lineTo(z.x + z.w, z.y + z.h / 3);
+  ctx.moveTo(z.x, z.y + (z.h * 2) / 3); ctx.lineTo(z.x + z.w, z.y + (z.h * 2) / 3);
+  ctx.stroke();
+
+  G.pitchHistory.forEach(ph => {
+    ctx.fillStyle = ph.isStrike ? '#eab308' : '#38bdf8';
+    ctx.strokeStyle = '#0f172a'; ctx.lineWidth = 1.1;
+    safeCircle(ctx, ph.x, ph.y, 4.2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0f172a'; ctx.font = '900 6.5px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(ph.num, ph.x, ph.y + 2.4);
+  });
+
+  if (G.mittSnap.timer > 0) {
+    drawCatcherMitt(ctx, G.mittSnap.x, G.mittSnap.y, 0.72 * sMult, G.mittSnap.isStrike ? '#facc15' : '#38bdf8', Math.min(1, G.mittSnap.timer / 20));
+  }
+
+  if (G.gameMode === 'DERBY' || G.isTop) {
+    const pciR = (G.powerMode ? 11 : 16) * sMult;
+    ctx.strokeStyle = G.ultActive ? '#facc15' : 'rgba(250,204,21,0.92)'; ctx.lineWidth = 2.0;
+    safeCircle(ctx, G.aimX, G.aimY, pciR); ctx.stroke();
+    ctx.fillStyle = 'rgba(250,204,21,0.85)'; safeCircle(ctx, G.aimX, G.aimY, 2.2); ctx.fill();
+  } else if (G.state === 'WAIT' || G.state === 'RING_LOCK') {
+    const pt = PITCH_TYPES[G.userPitchIdx] || PITCH_TYPES[0];
+    const pColor = G.ultActive ? '#facc15' : pt.color;
+    const cxVal = G.ultActive ? 82 : pt.cx, cyVal = G.ultActive ? -28 : pt.cy;
+    ctx.save();
+    ctx.strokeStyle = pColor; ctx.lineWidth = 2.0; ctx.setLineDash([5, 4]);
+    ctx.lineDashOffset = -(G.animTick * 0.7);
+    ctx.beginPath();
+    for (let s = 0; s <= 16; s++) {
+      const t = s / 16, c = Math.pow(t, 1.15) * Math.sin(t * Math.PI);
+      const px = z.moundX + (G.aimX - z.moundX) * t + cxVal * c;
+      const py = (z.moundY - 8) + (G.aimY - (z.moundY - 8)) * t + cyVal * c;
+      if (s === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+    }
+    ctx.stroke(); ctx.restore();
+
+    ctx.strokeStyle = pColor; ctx.lineWidth = 1.8;
+    safeCircle(ctx, G.aimX, G.aimY, 9 * sMult); ctx.stroke();
+    if (G.state === 'RING_LOCK') {
+      ctx.strokeStyle = Math.abs(G.ringScale - 1) < 0.25 ? '#4ade80' : '#facc15';
+      ctx.lineWidth = 2.2; safeCircle(ctx, G.aimX, G.aimY, 9 * sMult * G.ringScale); ctx.stroke();
+    }
+  }
+
+  const bInfo = getCurrentBatterInfo();
+  const batColor = (G.gameMode === 'DERBY' || G.isTop) ? '#2563eb' : '#ef4444';
+  const batX = bInfo.isRightBox ? (z.cx + z.w * 0.5 + 26) : (z.cx - z.w * 0.5 - 26);
+  drawChibi(ctx, batX, homeY - 10, 0.72 * sMult, batColor, bInfo.isRightBox ? 'BATTER_R' : 'BATTER', G.pitch && G.pitch.swung ? 1 : 0, 0, bInfo.faceIdx, 0, bInfo.isOnFire);
+
+  const umpY = homeY + 30 * sMult;
+  drawChibi(ctx, z.cx, umpY, 0.60 * sMult, '#1e293b', 'UMPIRE');
+  if (G.umpire.timer > 0) {
+    const bx = z.cx + 22 * sMult, by = umpY - 20 * sMult;
+    ctx.fillStyle = 'rgba(15,23,42,0.94)'; ctx.strokeStyle = G.umpire.color; ctx.lineWidth = 1.8;
+    ctx.fillRect(bx, by, 108, 20); ctx.strokeRect(bx, by, 108, 20);
+    ctx.fillStyle = G.umpire.color; ctx.font = '900 10px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText(`📢 ${G.umpire.text}`, bx + 54, by + 13.5);
+  }
+
+  if (G.state === 'PITCHING') {
+    const p = G.pitch, pt = PITCH_TYPES[p.typeIdx];
+    const tCol = p.isUltPitch ? '#facc15' : pt.color;
+    p.trail.forEach((t, idx) => {
+      ctx.fillStyle = tCol; ctx.globalAlpha = ((idx + 1) / p.trail.length) * 0.5;
+      safeCircle(ctx, t.x, t.y, 1.6 + (idx / p.trail.length) * 2.8); ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    const br = (2.8 + p.progress * 4.2) * sMult;
+    const isSweet = p.progress >= 0.78 && p.progress <= 0.95;
+    ctx.strokeStyle = isSweet ? '#4ade80' : 'rgba(255,255,255,0.65)';
+    ctx.lineWidth = isSweet ? 2.4 : 1.4;
+    safeCircle(ctx, p.x, p.y, br * Math.max(0.9, 2.2 - p.progress * 1.3)); ctx.stroke();
+    ctx.fillStyle = '#fff'; ctx.strokeStyle = tCol; ctx.lineWidth = 1.4;
+    safeCircle(ctx, p.x, p.y, br); ctx.fill(); ctx.stroke();
+  }
+
+  if (G.state === 'BATTED') {
+    const h = G.hit;
+    const hideBallForThrow = h.isCaught && (h.fieldAction === 'GROUND_THROW' || h.fieldAction === 'DOUBLE_PLAY') && h.progress >= 0.58;
+    if (!hideBallForThrow) {
+      ctx.fillStyle = 'rgba(0,0,0,0.35)'; safeCircle(ctx, h.x, h.y, 3.2); ctx.fill();
+      h.trail.forEach((t, idx) => {
+        ctx.fillStyle = h.isHR ? '#facc15' : '#38bdf8'; ctx.globalAlpha = ((idx + 1) / h.trail.length) * 0.55;
+        safeCircle(ctx, t.x, t.y, 1.5 + (idx / h.trail.length) * 2.6); ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = '#fff'; ctx.strokeStyle = '#ef4444'; ctx.lineWidth = 1.3;
+      safeCircle(ctx, h.x, h.y - h.h, 4.2); ctx.fill(); ctx.stroke();
+    }
+  }
+
+  for (let i = G.particles.length - 1; i >= 0; i--) {
+    const pt = G.particles[i];
+    pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.18; pt.life--;
+    ctx.fillStyle = pt.color; safeCircle(ctx, pt.x, pt.y, Math.max(1, pt.life * 0.18)); ctx.fill();
+    if (pt.life <= 0) G.particles.splice(i, 1);
+  }
+
+  if (G.perfectFX.timer > 0) {
+    ctx.fillStyle = '#fde047'; ctx.font = '900 13px sans-serif'; ctx.textAlign = 'center';
+    ctx.fillText('⚡ PERFECT!! 完美咬中球心', G.perfectFX.x, G.perfectFX.y);
+  }
+
+  const bannerY = z.isLand ? 16 : 124, bannerW = Math.min(290, W * 0.72);
+  ctx.fillStyle = 'rgba(15,23,42,0.90)'; ctx.strokeStyle = G.bannerColor; ctx.lineWidth = 1.8;
+  ctx.fillRect(z.cx - bannerW / 2, bannerY, bannerW, 24);
+  ctx.strokeRect(z.cx - bannerW / 2, bannerY, bannerW, 24);
+  ctx.fillStyle = G.bannerColor; ctx.font = '900 11px sans-serif'; ctx.textAlign = 'center';
+  ctx.fillText(G.bannerText, z.cx, bannerY + 15.5);
+
+  ctx.restore();
+}
+
+updateLobbyUI();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>
