@@ -1774,6 +1774,79 @@ function loop() {
 
 updateLobbyUI();
 requestAnimationFrame(loop);
+// ==================== v5.6.9 手機全機型 (iOS/Android) 自動適配外掛補丁 ====================
+(function applyV569MobilePatch() {
+  // 1. 升級版本號為 v5.6.9
+  document.title = '爆裂野球魂 v5.6.9：大巨蛋終極定案版';
+  G.bannerText = '大巨蛋 v5.6.9 終極定案版';
+
+  // 2. 注入跨平台 (Safari / Chrome) 動態高度與緊湊版面 CSS
+  const patchStyle = document.createElement('style');
+  patchStyle.innerHTML = `
+    html, body { position: fixed !important; inset: 0 !important; width: 100% !important; height: 100% !important; overflow: hidden !important; }
+    #app { position: fixed !important; inset: 0 !important; width: 100% !important; height: 100% !important; height: 100dvh !important; }
+    #title-screen { padding: max(12px, env(safe-area-inset-top, 12px)) 14px max(16px, env(safe-area-inset-bottom, 16px)) 14px !important; }
+    .hud-left { top: max(10px, env(safe-area-inset-top, 10px)) !important; padding: 5px 9px !important; }
+    .hud-right { top: max(10px, env(safe-area-inset-top, 10px)) !important; }
+    .ctrl-left { bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important; gap: 3px !important; width: 126px !important; }
+    .ctrl-right { bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important; }
+    #main-btn { width: 72px !important; height: 72px !important; }
+    #pitch-info { bottom: calc(max(12px, env(safe-area-inset-bottom, 12px)) + 74px) !important; }
+    @media (orientation: landscape) {
+      #title-screen { padding: 8px 18px 10px 18px !important; }
+      .hud-left, .hud-right { top: 6px !important; }
+      .ctrl-left, .ctrl-right { bottom: 6px !important; }
+      .opt-btn, .bat-btn { padding: 3px 4px !important; font-size: 9.5px !important; }
+      #main-btn { width: 64px !important; height: 64px !important; font-size: 14px !important; }
+      #pitch-info { bottom: 8px !important; left: 140px !important; transform: none !important; }
+    }
+  `;
+  document.head.appendChild(patchStyle);
+
+  // 3. 覆寫動態視窗偵測（自動扣除手機上下網址列與工具列）
+  resize = function() {
+    const appEl = document.getElementById('app');
+    W = appEl ? appEl.clientWidth : window.innerWidth;
+    H = appEl ? appEl.clientHeight : (window.visualViewport ? Math.round(window.visualViewport.height) : window.innerHeight);
+    DPR = Math.min(3, window.devicePixelRatio || 1);
+    canvas.width = Math.round(W * DPR); canvas.height = Math.round(H * DPR);
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  };
+  if (window.visualViewport) window.visualViewport.addEventListener('resize', resize);
+  resize();
+
+  // 4. 覆寫球場與好球帶座標（整體上提 5%，讓本壘板與主審在橫直式都不被切掉）
+  getZone = function() {
+    const isLand = W > H, cx = W * 0.5, cy = isLand ? H * 0.555 : H * 0.605;
+    const zw = isLand ? Math.min(40, H * 0.11) : Math.min(36, W * 0.095);
+    const zh = isLand ? Math.min(46, H * 0.125) : Math.min(44, W * 0.115);
+    const moundY = isLand ? H * 0.435 : H * 0.485;
+    const wallY  = isLand ? H * 0.175 : H * 0.205;
+    return { cx, cy, x: cx - zw / 2, y: cy - zh / 2, w: zw, h: zh, moundX: cx, moundY, wallY, isLand };
+  };
+
+  getBasePts = function(z) {
+    const homeY = z.cy + z.h * 0.55;
+    const wallDrop = z.isLand ? 34 : H * 0.10;
+    const foulRY = z.wallY + Math.pow(0.9, 2) * wallDrop;
+    const tB = 0.54, bxOff = (W * 0.45) * tB, by = homeY - (homeY - foulRY) * tB;
+    return [
+      { x: z.cx, y: homeY },
+      { x: z.cx + bxOff, y: by },
+      { x: z.cx,         y: z.isLand ? H * 0.315 : H * 0.345 },
+      { x: z.cx - bxOff, y: by },
+      { x: z.cx, y: homeY }
+    ];
+  };
+
+  // 5. 同步上移內外野手預設站位
+  const newRy = [0.265, 0.215, 0.265, 0.42, 0.37, 0.37, 0.42];
+  FIELDERS_BASE.forEach((f, i) => { f.ry = newRy[i]; if (G.fielders[i]) G.fielders[i].curY = newRy[i]; });
+
+  // 6. 重新定位初始打擊準星
+  const zNow = getZone(); G.aimX = zNow.cx; G.aimY = zNow.cy;
+})();
+
 </script>
 </body>
 </html>
